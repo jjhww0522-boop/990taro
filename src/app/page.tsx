@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
-import { FormEvent, useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useCompletion } from "@ai-sdk/react";
 import { MAJOR_ARCANA } from "../lib/tarotData";
 
 type Phase = "input" | "deck" | "shuffling" | "selecting" | "result";
@@ -23,22 +24,32 @@ export default function ChatPage() {
   const [phase, setPhase] = useState<Phase>("input");
   const [inputText, setInputText] = useState("");
   const [askedText, setAskedText] = useState("");
+  const [userQuestion, setUserQuestion] = useState("");
   const [selectedCards, setSelectedCards] = useState<number[]>([]);
+  const [hasRequestedReading, setHasRequestedReading] = useState(false);
+  const [orientations, setOrientations] = useState<Record<number, boolean>>({}); // true면 역방향
   const [deck, setDeck] = useState<number[]>([]);
   const [isShuffling, setIsShuffling] = useState(false);
+  const { complete, completion, isLoading, error } = useCompletion({
+    api: "/api/tarot",
+    streamProtocol: "text",
+    onError: (err) => {
+      console.error("Tarot completion error:", err);
+    },
+  });
   const reduceMotion = useReducedMotion();
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const text = inputText.trim();
-    if (!text) return;
+  const handleAsk = (question: string) => {
+    const trimmedQuestion = question.trim();
+    if (!trimmedQuestion) {
+      return;
+    }
 
-    setAskedText(text);
-    setInputText("");
-    setSelectedCards([]);
-    setDeck([]);
-    setIsShuffling(false);
-    setPhase("deck");
+    setInputText(trimmedQuestion);
+    setUserQuestion(trimmedQuestion);
+    setAskedText(trimmedQuestion);
+    setHasRequestedReading(false);
+    setPhase("deck"); // 혹은 셔플 페이즈
   };
 
   const handleShuffle = () => {
@@ -53,81 +64,159 @@ export default function ChatPage() {
   };
 
   const handleCardSelect = (index: number) => {
-    if (phase !== "selecting" || selectedCards.includes(index)) return;
-
-    const next = [...selectedCards, index];
-    setSelectedCards(next);
-
-    if (next.length === 3) {
-      window.setTimeout(() => setPhase("result"), RESULT_DELAY_MS);
+    if (!selectedCards.includes(index) && selectedCards.length < 3) {
+      // 50% ?뺣쪧濡???갑??true) 寃곗젙
+      const isReversed = Math.random() < 0.5;
+      setOrientations(prev => ({ ...prev, [index]: isReversed }));
+      setSelectedCards(prev => [...prev, index]);
+      
+      if (selectedCards.length + 1 === 3) {
+        setTimeout(() => setPhase('result'), 1500);
+      }
     }
   };
 
+  useEffect(() => {
+    if (phase === "result" && selectedCards.length === 3 && userQuestion && !hasRequestedReading) {
+      const cardsData = selectedCards.map((idx) => {
+        const card = MAJOR_ARCANA[deck[idx]];
+        const isReversed = orientations[idx];
+        return {
+          name: card.name,
+          orientation: isReversed ? "역방향" : "정방향",
+          meaning: isReversed ? card.reversed : card.upright,
+        };
+      });
+
+      setHasRequestedReading(true);
+      complete(userQuestion, {
+        body: {
+          question: userQuestion,
+          cards: cardsData,
+        },
+      });
+    }
+  }, [phase, selectedCards.length, userQuestion, hasRequestedReading]);
+
   return (
-    <div className="relative flex min-h-screen w-full justify-center overflow-hidden bg-occult-bg-main text-occult-text-main">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_10%,rgba(140,28,28,0.2),transparent_45%)]" />
+    <main className="relative min-h-screen w-full text-[#E0E0E0] font-sans flex flex-col overflow-x-hidden bg-[#121212]">
+      
+      {/* 1. ?꾨꼍?섍쾶 怨좎젙???꾩껜?붾㈃ 諛곌꼍 ?덉씠??*/}
+      <div className="fixed inset-0 w-screen h-screen z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[#121212]/80 z-10"></div>
+        {/* 寃쎈줈瑜?main_bg2.jpg 濡?媛뺤젣 吏??*/}
+        <img src="/cards/main_bg2.jpg" alt="background" className="w-full h-full object-cover z-0 opacity-70" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+      </div>
 
-      <main className="relative flex h-[100dvh] w-full max-w-md flex-col border-x border-occult-accent-muted/50 bg-occult-bg-main/95 px-4 shadow-[0_0_50px_rgba(0,0,0,0.75)]">
-        <header className="shrink-0 border-b border-occult-accent-muted/40 py-5 text-center">
-          <p className="mb-1 text-[10px] uppercase tracking-[0.3em] text-occult-text-muted">WOLHA TAROT</p>
-          <h1 className="font-serif text-xl tracking-widest text-occult-text-main">월하 타로</h1>
-        </header>
+      {/* 상단 헤더 영역 */}
+      <header className="relative z-20 flex flex-col items-center pt-8 pb-4 border-b border-[#8C1C1C]/30 w-full transition-all duration-500">
+        <h3 className="text-[#8C1C1C] text-xs tracking-[0.3em] mb-2">WOLHA TAROT</h3>
+        {/* input 페이즈에서만 한글 제목 표시하여 공간 확보 및 몰입감 증대 */}
+        {phase === 'input' && (
+          <h1 className="text-3xl md:text-4xl font-serif font-bold text-[#E0E0E0] animate-fadeIn">월하 타로</h1>
+        )}
+      </header>
 
-        <section className="relative flex-1 overflow-hidden px-1 pt-8 pb-4">
-          <AnimatePresence mode="wait">
-            {phase === "input" && (
-              <motion.div
-                key="phase-input"
-                initial={{ opacity: 0, y: reduceMotion ? 0 : 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: reduceMotion ? 0 : -16 }}
-                transition={{ duration: reduceMotion ? 0.15 : 0.45 }}
-                className="grid h-full place-items-center"
+      {/* ?쒕??섏씠 ?ㅽ???諛뺤뒪??硫붿씤 肄섑뀗痢?(input ?곸뿭) */}
+      {phase === 'input' && (
+        <div className="relative z-20 flex-1 flex flex-col items-center justify-center w-full px-4 py-12">
+          
+          {/* 以묒븰 ??댄? */}
+          <h2 className="text-[#E0E0E0] text-2xl md:text-4xl font-serif font-bold mb-8 text-center drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] tracking-widest">
+            무엇을 도와드릴까요?
+          </h2>
+
+          {/* 嫄곕? 諛뺤뒪 ?섑띁 (怨좉툒?ㅻ윭???묒슂???좊━ 吏덇컧) */}
+          <div 
+            className="relative flex flex-col bg-black/55 backdrop-blur-xl border border-[#8C1C1C]/40 rounded-2xl p-5 md:p-6 shadow-[0_12px_36px_rgba(0,0,0,0.75)] focus-within:border-[#D14F4F]/80 focus-within:shadow-[0_0_25px_rgba(209,79,79,0.2)] transition-all duration-500"
+            style={{ width: '100%', maxWidth: '768px' }}
+          >
+            
+            {/* ?띿뒪???낅젰 ?곸뿭 (珥뚯뒪?ъ슫 湲곕낯 ???꾨꼍 ?쒓굅) */}
+            <textarea 
+              placeholder="어떤 고민을 안고 오셨습니까? 편하게 적어주세요..." 
+              className="w-full bg-transparent text-lg md:text-xl text-[#E0E0E0] placeholder-[#6b7280] resize-none border-none focus:border-transparent outline-none focus:outline-none focus:ring-0 custom-scrollbar font-serif leading-relaxed"
+              style={{ minHeight: '120px' }}
+              value={inputText}
+              onChange={(e) => setInputText(e.currentTarget.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (inputText.trim() !== '') {
+                    handleAsk(inputText);
+                  }
+                }
+              }}
+            />
+            
+            {/* ?섎떒 踰꾪듉 ?곸뿭 */}
+            <div className="flex justify-end mt-4">
+              <button 
+                onClick={() => {
+                  if (inputText.trim() !== '') {
+                    handleAsk(inputText);
+                  }
+                }}
+                className="shrink-0 px-5 h-12 bg-[#8C1C1C] hover:bg-[#A62B2B] text-white rounded-xl shadow-[0_4px_15px_rgba(140,28,28,0.5)] transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#D14F4F]/60 font-serif text-sm md:text-base"
               >
-                <p className="max-w-[17rem] text-center font-serif text-2xl leading-relaxed text-occult-text-main/90">
-                  어떤 고민을 안고 오셨습니까?
-                </p>
-              </motion.div>
-            )}
+                전달
+              </button>
+            </div>
+            
+          </div>
+        </div>
+      )}
+      
+      {/* ???꾨옒遺?곕뒗 湲곗〈??deck, shuffling, selecting, result ?깆쓽 ?뚮뜑留?肄붾뱶瑜??댁뼱???묒꽦??寃?*/}
+      {phase !== "input" && (
+        <div className="relative z-20 flex-1 flex flex-col">
+          <section className="relative flex-1 overflow-hidden px-4 pt-8 pb-4">
+            <AnimatePresence mode="wait">
 
-            {/* 'deck' & 'shuffling' 페이즈 */}
+            {/* 'deck' & 'shuffling' ?섏씠利?*/}
             {(phase === 'deck' || phase === 'shuffling') && (
               <div className="w-full flex flex-col items-center justify-center min-h-[60vh] gap-12 pt-16">
                 <div className="relative flex justify-center items-center w-[240px] h-[360px] md:w-[320px] md:h-[480px]">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <motion.div
                       key={i}
-                      className="absolute flex-none w-[240px] h-[360px] md:w-[320px] md:h-[480px] bg-[#1C1C1E] border-2 border-[#8C1C1C] rounded-2xl shadow-2xl flex items-center justify-center origin-center"
+                      className="absolute flex-none w-[200px] h-[300px] md:w-[280px] md:h-[420px] rounded-2xl shadow-2xl origin-center overflow-hidden border-2 border-[#8C1C1C]"
                       initial={{ rotate: i * 2 - 4, x: i * 2 }}
-                      animate={
-                        phase === 'shuffling'
-                          ? {
-                              // 허공으로 솟구치며 360도 회전하고 넓게 퍼지는 매우 화려한 모션
-                              x: [0, (i % 2 === 0 ? 1 : -1) * 200, (i % 2 === 0 ? -1 : 1) * 100, 0],
-                              y: [0, -150, 50, 0],
-                              rotate: [0, (i % 2 === 0 ? 180 : -180), (i % 2 === 0 ? 360 : -360), i * 2 - 4],
-                              scale: [1, 1.2, 0.9, 1],
-                              zIndex: [10, 30, 20, 10],
-                            }
-                          : { rotate: i * 2 - 4, x: i * 2 }
-                      }
-                      transition={{ duration: 0.8, repeat: 3, ease: "easeInOut" }}
-                    >
-                      <div className="absolute inset-3 border border-[#8C1C1C]/40 rounded-xl pointer-events-none"></div>
-                      <span className="text-[#8C1C1C] text-8xl md:text-9xl opacity-40"></span>
+          animate={
+            phase === 'shuffling'
+              ? {
+                  // 醫뚯슦濡쒕쭔 ?댁쭩 踰뚯뼱吏硫?鍮좊Ⅴ寃?援먯감?섎뒗 臾듭쭅???뷀뵆
+                  x: [0, (i % 2 === 0 ? 80 : -80), (i % 2 === 0 ? -40 : 40), 0],
+                  y: [0, (i % 2 === 0 ? -10 : 10), 0],
+                  rotate: [i * 2 - 4, (i % 2 === 0 ? 5 : -5), i * 2 - 4],
+                  zIndex: [10, 30, 20, 10],
+                }
+              : { rotate: i * 2 - 4, x: i * 2 }
+          }
+          transition={{ duration: 0.4, repeat: 5, ease: "linear" }}
+        >
+                      <img src="/cards/back_00.jpg" alt="Card Back" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                     </motion.div>
                   ))}
                 </div>
-                {/* 하단 버튼 (생략 없이 기존대로 렌더링) */}
-                {/* ... 기존 버튼 코드 ... */}
+                {/* ?섎떒 踰꾪듉 (?앸왂 ?놁씠 湲곗〈?濡??뚮뜑留? */}
+                {/* ... 湲곗〈 踰꾪듉 肄붾뱶 ... */}
                 <div className="h-24 flex items-center justify-center mt-10">
                   {phase === 'deck' && (
-                    <button
-                      onClick={handleShuffle}
-                      className="px-12 py-4 bg-[#8C1C1C] text-[#E0E0E0] font-serif text-xl md:text-2xl rounded-full shadow-[0_0_20px_rgba(140,28,28,0.5)] hover:bg-[#A62B2B] hover:scale-105 transition-all duration-300 z-50"
-                    >
-                      카드 섞기
-                    </button>
+                    <div className="flex gap-3 md:gap-4 mt-8">
+                      <button
+                        onClick={handleShuffle}
+                        className="px-6 py-2 bg-[#8C2727] text-[#DCD8C0] border border-[#8C2727] rounded-full text-sm md:text-base font-serif hover:bg-transparent hover:text-[#8C2727] transition-all duration-300 shadow-[0_0_15px_rgba(140,39,39,0.4)]"
+                      >
+                        카드 섞기
+                      </button>
+                      <button
+                        onClick={() => setPhase("input")}
+                        className="px-6 py-2 bg-transparent text-[#A39E93] border border-[#A39E93]/50 rounded-full text-sm md:text-base font-serif hover:border-[#A39E93] hover:text-[#DCD8C0] transition-all duration-300"
+                      >
+                        고민 수정
+                      </button>
+                    </div>
                   )}
                   {phase === 'shuffling' && (
                     <div className="text-[#8C1C1C] font-serif text-xl md:text-2xl tracking-widest animate-pulse">
@@ -149,7 +238,7 @@ export default function ChatPage() {
               >
                 <div className="mb-5 space-y-2 text-center">
                   <p className="font-serif text-lg text-occult-text-main">[ 당신의 물음 : "{askedText}" ]</p>
-                  <p className="text-sm text-occult-text-muted">카드를 눌러 뒤집고, 세 장을 완성하세요.</p>
+                  <p className="text-sm text-occult-text-muted">카드를 눌러 3장을 선택해주세요</p>
                   <p className="text-sm font-medium text-occult-accent-text">선택한 카드: {selectedCards.length} / 3</p>
                 </div>
 
@@ -163,6 +252,7 @@ export default function ChatPage() {
                   {Array.from({ length: 22 }).map((_, index) => {
                     const isSelected = selectedCards.includes(index);
                     const cardData = MAJOR_ARCANA[deck[index] ?? index];
+                    const isReversed = Boolean(orientations[index]);
                     return (
                       <div
                         key={index}
@@ -176,43 +266,51 @@ export default function ChatPage() {
             `}
                         style={{ perspective: "1000px" }}
                       >
-                        <div
-                          className="w-full h-full relative"
-                          style={{
-                            transformStyle: "preserve-3d",
-                            transition: "transform 0.8s",
-                            transform: isSelected ? "rotateY(180deg)" : "rotateY(0deg)"
-                          }}
+                        {/* 移대뱶 3D ?뚮┰ ?섑띁 (Flip ?띾룄 ???媛먯냽: 2珥? */}
+                        <div 
+                          className="w-full h-full relative transition-all duration-[2000ms] preserve-3d"
+                          style={{ transformStyle: 'preserve-3d', transform: isSelected ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
                         >
-                          <div
-                            className="absolute inset-0 w-full h-full bg-[#1C1C1E] border border-[#8C1C1C] rounded-xl shadow-2xl flex items-center justify-center backface-hidden"
-                            style={{ backfaceVisibility: "hidden" }}
-                          >
-                            <div className="absolute inset-2 border border-[#8C1C1C]/40 rounded-lg pointer-events-none"></div>
-                            <span className="text-[#8C1C1C] text-4xl opacity-50"></span>
+                          {/* (移대뱶 ?룸㈃ 肄붾뱶??湲곗〈怨??숈씪?섍쾶 ?좎?) */}
+                          <div className="absolute inset-0 w-full h-full backface-hidden rounded-xl overflow-hidden border-2 border-[#8C1C1C]/70 shadow-lg">
+                            <img src="/cards/back_00.jpg" alt="Card Back" className="w-full h-full object-cover" />
                           </div>
 
-                          {/* 카드 앞면 (데이터 바인딩 적용) */}
-                          <div className="absolute inset-0 w-full h-full bg-[#121212] border-2 border-[#D14F4F] rounded-xl shadow-[0_0_30px_rgba(209,79,79,0.7)] flex flex-col items-center justify-center overflow-hidden backface-hidden" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
-                            {/* 이미지가 준비된 경우를 대비한 img 태그 (fallback으로 배경색) */}
+                          {/* 移대뱶 ?욌㈃ (諛곌꼍/?뚮몢由??꾪솚 ?띾룄 媛먯냽: 1.7珥? */}
+                          <div 
+                            className={`absolute inset-0 w-full h-full rounded-xl flex flex-col items-center justify-center overflow-hidden backface-hidden transition-all duration-[1700ms] ${
+                              isSelected && orientations[index] 
+                                ? 'border-2 border-[#D14F4F] shadow-[0_0_40px_rgba(209,79,79,0.8)] bg-[#1a0505]' 
+                                : 'border-2 border-[#A0A0A0] shadow-[0_0_20px_rgba(255,255,255,0.2)] bg-[#121212]'
+                            }`} 
+                            style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                          >
+                            {/* 移대뱶 ?대?吏 (??갑???뚯쟾/以뚯씤 ?띾룄 ???媛먯냽: 2.5珥??숈븞 ?쒖꽌???뚯븘媛? */}
                             <img 
                               src={cardData.image} 
                               alt={cardData.name} 
-                              className="absolute inset-0 w-full h-full object-cover opacity-80"
+                              className={`absolute inset-0 w-full h-full object-cover opacity-85 transition-all duration-[2500ms] ease-out ${
+                                isSelected && orientations[index] ? 'rotate-180 scale-110' : 'rotate-0 scale-100'
+                              }`}
                               onError={(e) => { e.currentTarget.style.display = 'none'; }} 
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/40 to-transparent pointer-events-none"></div>
+                            
+                            {/* (?섎㉧吏 遺됱? ?ㅻ쾭?덉씠, ?띿뒪???쇰꺼 肄붾뱶??湲곗〈怨??숈씪?섍쾶 ?좎?) */}
+                            {isSelected && orientations[index] && (
+                              <div className="absolute inset-0 bg-gradient-to-t from-[#8C1C1C]/70 via-transparent to-[#8C1C1C]/30 pointer-events-none animate-pulse mix-blend-multiply"></div>
+                            )}
                             
                             <div className="z-10 text-center w-full px-2 absolute bottom-4">
-                              <div className="text-[#8C1C1C] text-[10px] md:text-xs font-bold border border-[#8C1C1C] px-1 py-0.5 rounded mb-1 inline-block bg-[#121212]/80">
-                                {/* 정방향 고정 (추후 역방향 로직 추가 가능) */}
-                                정방향
+                              <div className={`text-[10px] md:text-xs font-bold border px-2 py-0.5 rounded-sm mb-1 inline-block backdrop-blur-sm ${
+                                orientations[index] ? 'text-[#ff6b6b] border-[#ff6b6b] bg-black/70' : 'text-[#E0E0E0] border-[#E0E0E0] bg-[#121212]/70'
+                              }`}>
+                                {orientations[index] ? '역방향' : '정방향'}
                               </div>
-                              <div className="text-[#E0E0E0] text-sm md:text-base font-serif font-bold text-shadow-occult">
+                              <div className="text-[#E0E0E0] text-sm md:text-lg font-serif font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
                                 {cardData.name}
                               </div>
-                              <div className="text-[#A0A0A0] text-[8px] md:text-[10px] mt-1 line-clamp-2 leading-tight bg-[#121212]/60 px-1 rounded">
-                                {cardData.upright}
+                              <div className="text-[#D0D0D0] text-[8px] md:text-[10px] mt-1 line-clamp-2 leading-tight bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                                {orientations[index] ? cardData.reversed : cardData.upright}
                               </div>
                             </div>
                           </div>
@@ -225,65 +323,114 @@ export default function ChatPage() {
             )}
 
             {phase === 'result' && (
-              <div className="w-full flex justify-center items-center gap-4 md:gap-10 mt-10 px-4">
-                {selectedCards.map((originalIndex, i) => {
-                  const cardId = deck[originalIndex];
-                  const cardData = MAJOR_ARCANA[cardId]; // 실제 데이터 매핑
-                  return (
-                    <div key={i} className="shrink-0 flex-none w-[110px] h-[165px] md:w-[200px] md:h-[300px] relative rounded-xl overflow-hidden border-2 border-[#D14F4F] shadow-[0_0_30px_rgba(209,79,79,0.5)] bg-[#121212]">
-                      <img src={cardData.image} alt={cardData.name} className="absolute inset-0 w-full h-full object-cover opacity-80" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/50 to-transparent pointer-events-none"></div>
-                      <div className="absolute bottom-3 w-full text-center px-1 md:px-2 z-10">
-                        <div className="text-[#8C1C1C] text-[9px] md:text-xs font-bold border border-[#8C1C1C] px-1 py-0.5 rounded mb-1 inline-block bg-[#121212]/80">정방향</div>
-                        <div className="text-[#E0E0E0] text-sm md:text-xl font-serif font-bold text-shadow-occult">{cardData.name}</div>
-                        <div className="text-[#A0A0A0] text-[8px] md:text-[11px] mt-1 line-clamp-2 leading-tight bg-[#121212]/60 px-1 rounded">{cardData.upright}</div>
+              <div className="w-full flex flex-col items-center animate-fadeIn pb-20">
+                <h2 className="text-[#E0E0E0] text-xl md:text-3xl font-serif mb-12 mt-6 tracking-widest text-shadow-occult">운명의 응답</h2>
+                
+                {/* --- 기존 3장 카드 렌더링 영역 (유지) --- */}
+                <div className="flex flex-wrap justify-center gap-4 md:gap-8 max-w-6xl">
+                                    {selectedCards.map((originalIndex, i) => {
+                    const cardData = MAJOR_ARCANA[deck[originalIndex]];
+                    const isReversed = orientations[originalIndex];
+
+                    return (
+                      <motion.div 
+                        key={i}
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.3 }}
+                        className="flex flex-col items-center w-[200px] md:w-[280px] group"
+                      >
+                        
+                        {/* 1. 카드 상단 라벨 영역 (크기 대폭 축소 및 톤다운) */}
+                        <div className="flex items-center justify-center mb-3 w-full relative z-10">
+                          
+                          {/* 라벨 텍스트: 하단 설명란보다 작게 설정, 쨍한 색상 완전 제거 */}
+                          <div className={`flex items-center gap-1.5 px-3 py-1 font-serif border-y border-opacity-40 ${
+                            isReversed 
+                              ? 'text-[#8C2727] border-[#8C2727]' // 역방향: 말라붙은 핏자국, 어두운 적색
+                              : 'text-[#A39E93] border-[#A39E93]' // 정방향: 오래된 양피지, 톤다운된 웜그레이
+                          }`}
+                          style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                            {/* 기호와 한글 크기를 동일하게 맞추고 아주 작게 축소 */}
+                            <span className="text-[10px] md:text-xs font-bold opacity-80">{isReversed ? '' : ''}</span>
+                            <span className="text-[10px] md:text-xs tracking-[0.2em] font-medium opacity-90 pl-1">
+                              {isReversed ? '역방향' : '정방향'}
+                            </span>
+                          </div>
+                          
+                        </div>
+
+                        {/* 2. 카드 이미지 영역 (변경 없음, 라벨 밑으로 옴) */}
+                        <div className="w-full aspect-[2/3] relative rounded-2xl overflow-hidden border-2 border-[#8C1C1C] shadow-[0_0_30px_rgba(140,28,28,0.3)] bg-[#121212] mb-5 transition-transform duration-500 group-hover:-translate-y-4 group-hover:shadow-[0_0_40px_rgba(140,28,28,0.6)]">
+                          <img src={cardData.image} alt={cardData.name} className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 ${isReversed ? 'rotate-180' : ''}`} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                        </div>
+
+                        {/* 3. 하단 텍스트 설명 영역 (이름과 해석만 깔끔하게 남김) */}
+                        <div className="flex flex-col items-center text-center w-full px-2 relative z-10">
+                          <div className="absolute inset-0 bg-black/40 blur-xl -z-10 rounded-full scale-125"></div>
+                          
+                          {/* 카드 이름 */}
+                          <div className="text-white text-xl md:text-2xl font-serif font-bold mb-3 tracking-wide" 
+                               style={{ textShadow: '0 2px 4px black, 0 0 10px black, 0 0 20px black' }}>
+                            {cardData.name}
+                          </div>
+                          
+                          {/* 카드 설명 */}
+                          <div className="text-[#F0F0F0] text-sm md:text-base leading-relaxed break-keep font-medium" 
+                               style={{ textShadow: '0 2px 4px black, 0 0 12px black' }}>
+                            {isReversed ? cardData.reversed : cardData.upright}
+                          </div>
+                        </div>
+
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {/* --- 신규 추가: AI 점괘 스트리밍 출력 영역 --- */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.5, duration: 1 }}
+                  className="w-full max-w-4xl mt-16 p-6 md:p-10 relative z-10 flex flex-col items-center"
+                >
+                  {/* 다크 글래스모피즘 배경 */}
+                  <div className="absolute inset-0 bg-[#0A0A0A]/80 backdrop-blur-md border border-[#8C2727]/30 rounded-2xl -z-10 shadow-[0_0_40px_rgba(140,39,39,0.15)]"></div>
+
+                  {/* 타이틀 */}
+                  <h3 className="text-[#8C2727] font-serif text-lg md:text-xl mb-6 tracking-[0.4em] font-bold border-b border-[#8C2727]/30 pb-3 flex items-center gap-3">
+                    <span className="text-sm opacity-70"></span>
+                    월하의 점괘
+                    <span className="text-sm opacity-70"></span>
+                  </h3>
+
+                  {/* 텍스트 렌더링 영역 */}
+                  <div className="text-[#DCD8C0] font-serif text-base md:text-lg leading-[2.2] md:leading-[2.5] whitespace-pre-wrap text-center md:text-left w-full min-h-[150px]">
+                    {isLoading && !completion ? (
+                      <div className="flex flex-col items-center justify-center h-full opacity-70 animate-pulse mt-10">
+                        <span className="text-[#8C2727] mb-3"></span>
+                        <p>신령의 목소리를 듣고 있소... 향을 피우고 잠시 기다리시오...</p>
                       </div>
-                    </div>
-                  );
-                })}
+                    ) : error ? (
+                      <p className="text-[#D14F4F] drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                        점괘를 불러오지 못했소. 잠시 후 다시 시도하시오.
+                      </p>
+                    ) : hasRequestedReading && !completion ? (
+                      <p className="text-[#A39E93] drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                        아직 점괘가 도착하지 않았소. 잠시 후 다시 시도하시오.
+                      </p>
+                    ) : (
+                      <p className="drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">{completion}</p>
+                    )}
+                  </div>
+                </motion.div>
               </div>
             )}
           </AnimatePresence>
         </section>
-
-        <AnimatePresence>
-          {phase === "input" && (
-            <motion.footer
-              key="input-footer"
-              initial={{ opacity: 0, y: reduceMotion ? 0 : 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: reduceMotion ? 0 : 22 }}
-              transition={{ duration: reduceMotion ? 0.12 : 0.35 }}
-              className="shrink-0 pb-12 pt-2"
-            >
-              <form
-                onSubmit={handleSubmit}
-                className="rounded-[1.75rem] border border-occult-accent-muted/60 bg-occult-bg-card/90 p-2 shadow-[0_18px_28px_rgba(0,0,0,0.5)]"
-              >
-                <label htmlFor="question-input" className="sr-only">
-                  고민 입력
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    id="question-input"
-                    type="text"
-                    value={inputText}
-                    onChange={(event) => setInputText(event.target.value)}
-                    placeholder="마음에 걸리는 고민을 적어주세요..."
-                    className="min-h-14 flex-1 rounded-full border border-occult-accent-muted/60 bg-occult-bg-main px-5 py-4 text-base text-occult-text-main shadow-lg outline-none placeholder:text-occult-text-muted focus:border-occult-accent focus:ring-2 focus:ring-occult-accent/40"
-                  />
-                  <button
-                    type="submit"
-                    className="shrink-0 rounded-full bg-occult-accent px-5 py-4 text-base font-bold text-occult-text-main shadow-lg transition-colors hover:bg-occult-accent-hover focus:outline-none focus:ring-2 focus:ring-occult-accent/40"
-                  >
-                    전송
-                  </button>
-                </div>
-              </form>
-            </motion.footer>
-          )}
-        </AnimatePresence>
-      </main>
-    </div>
+      </div>
+      )}
+    </main>
   );
 }
+
