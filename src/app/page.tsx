@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCompletion } from "@ai-sdk/react";
 import { MAJOR_ARCANA } from "../lib/tarotData";
@@ -10,6 +10,12 @@ type Phase = "input" | "deck" | "shuffling" | "selecting" | "result";
 const SHUFFLE_DURATION_MS = 2000;
 const RESULT_DELAY_MS = 1000;
 const DECK_TOTAL = 22;
+const EXAMPLE_QUESTIONS = [
+  { label: "연애운", icon: "💘", prompt: "저의 연애운이 궁금합니다. 앞으로 좋은 인연이 나타날까요?" },
+  { label: "금전운", icon: "💰", prompt: "이번 달 금전운과 재물의 기운을 알려주세요." },
+  { label: "건강운", icon: "🧿", prompt: "제 몸과 마음의 건강운을 점쳐주세요." },
+  { label: "학업운", icon: "📚", prompt: "요즘 제 학업운의 흐름과 집중의 방향이 궁금합니다." },
+];
 
 function createShuffledDeck(): number[] {
   const values = Array.from({ length: DECK_TOTAL }, (_, index) => index);
@@ -30,6 +36,8 @@ export default function ChatPage() {
   const [orientations, setOrientations] = useState<Record<number, boolean>>({}); // true면 역방향
   const [deck, setDeck] = useState<number[]>([]);
   const [isShuffling, setIsShuffling] = useState(false);
+  const [readingMode, setReadingMode] = useState<"free" | "paid">("free");
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const { complete, completion, isLoading, error } = useCompletion({
     api: "/api/tarot",
     streamProtocol: "text",
@@ -38,6 +46,14 @@ export default function ChatPage() {
     },
   });
   const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (phase !== "input" || !inputRef.current) {
+      return;
+    }
+    inputRef.current.style.height = "auto";
+    inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 140)}px`;
+  }, [inputText, phase]);
 
   const handleAsk = (question: string) => {
     const trimmedQuestion = question.trim();
@@ -109,11 +125,15 @@ export default function ChatPage() {
       </div>
 
       {/* 상단 헤더 영역 */}
-      <header className="relative z-20 flex flex-col items-center pt-8 pb-4 border-b border-[#8C1C1C]/30 w-full transition-all duration-500">
-        <h3 className="text-[#8C1C1C] text-xs tracking-[0.3em] mb-2">WOLHA TAROT</h3>
+      <header className="relative z-20 flex flex-col items-center pt-8 pb-4 border-b border-transparent w-full transition-all duration-500">
+        <h3 className="font-['Nosifer'] text-[#DCD8C0] drop-shadow-[0_0_15px_rgba(220,38,38,0.8)] text-2xl md:text-3xl tracking-[0.2em] mb-2">
+          WOLHA TAROT
+        </h3>
         {/* input 페이즈에서만 한글 제목 표시하여 공간 확보 및 몰입감 증대 */}
         {phase === 'input' && (
-          <h1 className="text-3xl md:text-4xl font-serif font-bold text-[#E0E0E0] animate-fadeIn">월하 타로</h1>
+          <h1 className="font-['East_Sea_Dokdo'] text-[#DCD8C0] drop-shadow-[0_0_10px_rgba(220,38,38,0.6)] text-5xl md:text-6xl animate-fadeIn">
+            월하 타로
+          </h1>
         )}
       </header>
 
@@ -123,46 +143,63 @@ export default function ChatPage() {
           
           {/* 以묒븰 ??댄? */}
           <h2 className="text-[#E0E0E0] text-2xl md:text-4xl font-serif font-bold mb-8 text-center drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] tracking-widest">
-            무엇을 도와드릴까요?
+            당신의 마음을 적어보세요
           </h2>
 
-          {/* 嫄곕? 諛뺤뒪 ?섑띁 (怨좉툒?ㅻ윭???묒슂???좊━ 吏덇컧) */}
-          <div 
-            className="relative flex flex-col bg-black/55 backdrop-blur-xl border border-[#8C1C1C]/40 rounded-2xl p-5 md:p-6 shadow-[0_12px_36px_rgba(0,0,0,0.75)] focus-within:border-[#D14F4F]/80 focus-within:shadow-[0_0_25px_rgba(209,79,79,0.2)] transition-all duration-500"
-            style={{ width: '100%', maxWidth: '768px' }}
-          >
-            
-            {/* ?띿뒪???낅젰 ?곸뿭 (珥뚯뒪?ъ슫 湲곕낯 ???꾨꼍 ?쒓굅) */}
-            <textarea 
-              placeholder="어떤 고민을 안고 오셨습니까? 편하게 적어주세요..." 
-              className="w-full bg-transparent text-lg md:text-xl text-[#E0E0E0] placeholder-[#6b7280] resize-none border-none focus:border-transparent outline-none focus:outline-none focus:ring-0 custom-scrollbar font-serif leading-relaxed"
-              style={{ minHeight: '120px' }}
-              value={inputText}
-              onChange={(e) => setInputText(e.currentTarget.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  if (inputText.trim() !== '') {
-                    handleAsk(inputText);
-                  }
-                }
-              }}
-            />
-            
-            {/* ?섎떒 踰꾪듉 ?곸뿭 */}
-            <div className="flex justify-end mt-4">
-              <button 
-                onClick={() => {
-                  if (inputText.trim() !== '') {
-                    handleAsk(inputText);
-                  }
-                }}
-                className="shrink-0 px-5 h-12 bg-[#8C1C1C] hover:bg-[#A62B2B] text-white rounded-xl shadow-[0_4px_15px_rgba(140,28,28,0.5)] transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#D14F4F]/60 font-serif text-sm md:text-base"
+          <div className="w-full max-w-3xl mx-auto flex flex-col items-center px-[30px]">
+            <div className="w-full max-w-[504px] md:max-w-[540px] mx-auto rounded-full bg-black/40 backdrop-blur-2xl border border-[#8C2727]/30 shadow-[0_10px_30px_rgba(0,0,0,0.45)] flex items-center px-6 py-3 min-h-[96px]">
+              <div className="flex flex-1 items-center gap-3 min-w-0">
+                <div className="w-10 h-10 shrink-0 rounded-full border border-[#8C2727]/60 bg-[#1A0A0A]/80 flex items-center justify-center text-[#DCD8C0] text-lg shadow-[0_0_10px_rgba(140,39,39,0.35)]">
+                  ✶
+                </div>
+                <textarea
+                  ref={inputRef}
+                  rows={1}
+                  placeholder="어떤 고민을 안고 오셨습니까? 편하게 적어주세요..."
+                  className="flex-1 min-w-0 pl-4 bg-transparent text-[#ECEAD8] placeholder-[#BAB7A6] resize-none border-none outline-none focus:outline-none focus:ring-0 text-[17px] md:text-[19px] leading-relaxed max-h-[140px] overflow-y-auto custom-scrollbar font-serif"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.currentTarget.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      if (inputText.trim() !== "") {
+                        handleAsk(inputText);
+                      }
+                    }
+                  }}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setReadingMode((prev) => (prev === "free" ? "paid" : "free"))}
+                className={`ml-3 shrink-0 rounded-full border px-3 py-1.5 text-[11px] md:text-xs font-serif transition-all duration-300 ${
+                  readingMode === "paid"
+                    ? "border-[#C6A86A]/80 text-[#D14F4F] shadow-[0_0_12px_rgba(220,38,38,0.38)]"
+                    : "border-[#C6A86A]/80 text-[#E9DEC3] shadow-[0_0_10px_rgba(233,222,195,0.24)]"
+                }`}
               >
-                전달
+                {readingMode === "paid" ? "유료(신령)" : "무료(일반)"}
               </button>
             </div>
-            
+
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: reduceMotion ? 0.1 : 0.45, ease: "easeOut" }}
+              className="mt-8 flex flex-wrap justify-center gap-6 w-full"
+            >
+              {EXAMPLE_QUESTIONS.map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => setInputText(item.prompt)}
+                  className="flex items-center space-x-2 px-5 py-3 bg-[#3A0A0A] border border-[#DCD8C0]/40 rounded-lg shadow-[0_0_15px_rgba(140,39,39,0.3)] text-[#DCD8C0] hover:-translate-y-1 hover:bg-[#5C1717] hover:shadow-[0_0_25px_rgba(140,39,39,0.6)] transition-all duration-300 cursor-pointer"
+                >
+                  <span className="text-xl">{item.icon}</span>
+                  {item.label}
+                </button>
+              ))}
+            </motion.div>
           </div>
         </div>
       )}

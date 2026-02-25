@@ -14,6 +14,11 @@ type RootLayoutProps = {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="ko">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Nosifer&family=East+Sea+Dokdo&display=swap" rel="stylesheet" />
+      </head>
       <body className="bg-occult-bg-main text-occult-text-main h-[100dvh] flex justify-center items-center overflow-hidden">
         {children}
         <AgentationDevtools />
