@@ -1,0 +1,303 @@
+﻿"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { MAJOR_ARCANA } from "../../lib/tarotData";
+
+type SelectedCard = {
+  slot: number;
+  cardIndex: number;
+  name: string;
+  image: string;
+  isReversed: boolean;
+};
+
+const MAX_SELECT = 3;
+const DRAG_START_THRESHOLD = 6;
+const DRAG_SCROLL_MULTIPLIER = 1.3;
+
+export default function PickPage() {
+  const router = useRouter();
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef({
+    isDown: false,
+    startX: 0,
+    startScrollLeft: 0,
+    moved: false,
+  });
+  const suppressClickRef = useRef(false);
+
+  const [selectedCards, setSelectedCards] = useState<SelectedCard[]>([]);
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const selectedSet = useMemo(
+    () => new Set(selectedCards.map((card) => card.cardIndex)),
+    [selectedCards],
+  );
+
+  const statusText =
+    selectedCards.length >= MAX_SELECT
+      ? "선택이 완료되었소"
+      : `세 장의 패를 신중히 고르시오 ( ${selectedCards.length} / 3 )`;
+
+  const toggleCard = (cardIndex: number) => {
+    const exists = selectedSet.has(cardIndex);
+    if (exists) {
+      setSelectedCards((prev) => prev.filter((card) => card.cardIndex !== cardIndex));
+      return;
+    }
+
+    if (selectedCards.length >= MAX_SELECT) {
+      return;
+    }
+
+    const card = MAJOR_ARCANA[cardIndex];
+    const next: SelectedCard = {
+      slot: selectedCards.length + 1,
+      cardIndex,
+      name: card.name,
+      image: card.image,
+      isReversed: Math.random() < 0.3,
+    };
+    setSelectedCards((prev) => [...prev, next]);
+  };
+
+  useEffect(() => {
+    if (selectedCards.length !== MAX_SELECT) return;
+
+    const timer = window.setTimeout(() => {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("selectedCards", JSON.stringify(selectedCards));
+      }
+      router.push("/result");
+    }, 2550);
+
+    return () => window.clearTimeout(timer);
+  }, [selectedCards, router]);
+
+  const handleWheelHorizontal = (event: React.WheelEvent<HTMLDivElement>) => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+      event.preventDefault();
+      el.scrollLeft += event.deltaY;
+    }
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    // Keep native touch scrolling on mobile, custom drag on desktop mouse.
+    if (event.pointerType !== "mouse" || event.button !== 0) return;
+
+    const el = scrollRef.current;
+    if (!el) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("[data-tarot-card='true']")) {
+      // Card taps should not enter drag mode.
+      return;
+    }
+
+    dragStateRef.current = {
+      isDown: true,
+      startX: event.clientX,
+      startScrollLeft: el.scrollLeft,
+      moved: false,
+    };
+
+    suppressClickRef.current = false;
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const el = scrollRef.current;
+    if (!el || !dragStateRef.current.isDown) return;
+
+    const deltaX = event.clientX - dragStateRef.current.startX;
+    if (Math.abs(deltaX) > DRAG_START_THRESHOLD) {
+      dragStateRef.current.moved = true;
+      suppressClickRef.current = true;
+      setIsDragging(true);
+    }
+
+    if (!dragStateRef.current.moved) {
+      return;
+    }
+
+    el.scrollLeft = dragStateRef.current.startScrollLeft - deltaX * DRAG_SCROLL_MULTIPLIER;
+  };
+
+  const endPointerDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    const el = scrollRef.current;
+    if (!el || !dragStateRef.current.isDown) return;
+
+    dragStateRef.current.isDown = false;
+    setIsDragging(false);
+
+    if (dragStateRef.current.moved) {
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 0);
+      return;
+    }
+
+    suppressClickRef.current = false;
+  };
+
+  return (
+    <main className="relative min-h-screen w-full overflow-hidden bg-transparent text-[#DCD8C0]">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-10 md:px-10">
+        <header className="mb-6 text-center">
+          <h1 className="text-xl leading-relaxed text-[#DCD8C0] drop-shadow-[0_0_14px_rgba(140,39,39,0.45)] md:text-3xl">
+            {statusText}
+          </h1>
+        </header>
+
+        <section className="overflow-visible">
+          <div
+            ref={scrollRef}
+            onWheel={handleWheelHorizontal}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={endPointerDrag}
+            onPointerCancel={endPointerDrag}
+            onPointerLeave={endPointerDrag}
+            className={`w-full overflow-x-auto overflow-y-hidden scrollbar-hide px-6 md:px-12 touch-pan-x select-none ${
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            }`}
+          >
+            <div className="relative flex min-w-max items-center justify-start pt-20 pb-16 pr-24 md:pt-20 md:pb-16">
+              {Array.from({ length: 22 }).map((_, i) => {
+                const cardData = MAJOR_ARCANA[i];
+                const selectedData = selectedCards.find((card) => card.cardIndex === i);
+                const isSelected = Boolean(selectedData);
+                const isHovered = hoveredCard === i;
+                const isReversed = selectedData?.isReversed ?? false;
+                const order = selectedCards.findIndex((card) => card.cardIndex === i) + 1;
+                const zIndex = isSelected ? 320 + i : isHovered ? 220 + i : i;
+
+                return (
+                  <motion.button
+                    key={i}
+                    type="button"
+                    data-tarot-card="true"
+                    onDragStart={(event) => event.preventDefault()}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onMouseEnter={() => setHoveredCard(i)}
+                    onMouseLeave={() => setHoveredCard((prev) => (prev === i ? null : prev))}
+                    onClick={() => {
+                      if (suppressClickRef.current) return;
+                      toggleCard(i);
+                    }}
+                    whileHover={{ y: isSelected ? -30 : -20 }}
+                    animate={{
+                      y: isSelected ? -30 : 0,
+                      scale: isSelected ? 1.05 : 1,
+                    }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    className="relative h-[260px] w-[152px] shrink-0 overflow-visible bg-transparent border-0 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0"
+                    style={{ marginLeft: i === 0 ? 0 : -45, zIndex }}
+                    aria-pressed={isSelected}
+                    aria-label={`${i + 1}번 카드 ${isSelected ? "선택됨" : "선택 안됨"}`}
+                  >
+                    <div className="pointer-events-none relative h-full w-full" style={{ perspective: "1000px" }}>
+                      <motion.div
+                        className="relative h-full w-full"
+                        style={{
+                          transformStyle: "preserve-3d",
+                          filter: isSelected ? "drop-shadow(0 0 20px rgba(212,175,55,0.6))" : "drop-shadow(0 4px 12px rgba(0,0,0,0.3))"
+                        }}
+                        animate={{ rotateY: isSelected ? 180 : 0 }}
+                        transition={{ duration: 2.2, ease: [0.22, 1, 0.36, 1] }}
+                      >
+                        {/* 카드 뒷면 */}
+                        <div
+                          className="absolute inset-0 overflow-hidden rounded-lg"
+                          style={{
+                            backfaceVisibility: "hidden",
+                            WebkitBackfaceVisibility: "hidden",
+                          }}
+                        >
+                          <img
+                            src="/cards/back_00.jpg"
+                            alt="타로 카드 뒷면"
+                            draggable={false}
+                            className="h-full w-full object-cover block"
+                          />
+                        </div>
+
+                        {/* 카드 앞면 */}
+                        <div
+                          className="absolute inset-0 overflow-hidden rounded-lg"
+                          style={{
+                            transform: "rotateY(180deg)",
+                            backfaceVisibility: "hidden",
+                            WebkitBackfaceVisibility: "hidden",
+                          }}
+                        >
+                          <img
+                            src={`/cards/major_${String(i).padStart(2, '0')}.jpg`}
+                            alt={cardData.name}
+                            draggable={false}
+                            className={`h-full w-full object-cover block transition-transform duration-1000 ${
+                              isReversed ? "rotate-180" : ""
+                            }`}
+                          />
+                          {isReversed && (
+                            <motion.div
+                              className="absolute inset-0 bg-gradient-to-t from-[#8B1A1A]/50 to-transparent pointer-events-none"
+                              animate={{ opacity: [0.18, 0.45, 0.18] }}
+                              transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+                            />
+                          )}
+                        </div>
+                      </motion.div>
+                    </div>
+
+                    {isSelected ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#B8941F] px-3 py-1 text-xs font-bold text-[#1A0A00] shadow-lg shadow-[#D4AF37]/40"
+                      >
+                        선택 {order}
+                      </motion.div>
+                    ) : null}
+
+                    {isSelected && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 1.2, duration: 0.5 }}
+                        className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap"
+                      >
+                        <div className={`relative px-4 py-1.5 rounded-full font-medium text-[11px] tracking-wide shadow-2xl ${
+                          isReversed
+                            ? "bg-gradient-to-r from-[#8B1A1A] to-[#5A0F0F] text-[#FFD6D6] border border-[#D4AF37]/30"
+                            : "bg-gradient-to-r from-[#D4AF37] to-[#B8941F] text-[#1A0A00] border border-[#F5ECD7]/50"
+                        }`}>
+                          <div className="absolute inset-0 bg-white/10 rounded-full" />
+                          <span className="relative z-10 drop-shadow-sm">
+                            {isReversed ? "逆 역방향" : "正 정방향"}
+                          </span>
+                        </div>
+                      </motion.div>
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <p className="mt-4 text-center text-sm tracking-wide text-[#DCD8C0]/70 md:text-base">
+          카드를 좌우로 드래그해 모든 패를 살펴보세요
+        </p>
+      </div>
+    </main>
+  );
+}
+
+
+
+

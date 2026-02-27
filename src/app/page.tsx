@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCompletion } from "@ai-sdk/react";
 import { MAJOR_ARCANA } from "../lib/tarotData";
+import { useRouter } from "next/navigation";
 
 type Phase = "input" | "deck" | "shuffling" | "selecting" | "result";
 
@@ -11,10 +12,10 @@ const SHUFFLE_DURATION_MS = 2000;
 const RESULT_DELAY_MS = 1000;
 const DECK_TOTAL = 22;
 const EXAMPLE_QUESTIONS = [
-  { label: "연애운", icon: "💘", prompt: "저의 연애운이 궁금합니다. 앞으로 좋은 인연이 나타날까요?" },
-  { label: "금전운", icon: "💰", prompt: "이번 달 금전운과 재물의 기운을 알려주세요." },
-  { label: "건강운", icon: "🧿", prompt: "제 몸과 마음의 건강운을 점쳐주세요." },
-  { label: "학업운", icon: "📚", prompt: "요즘 제 학업운의 흐름과 집중의 방향이 궁금합니다." },
+  { label: "연애운", icon: "💕", prompt: "저의 연애운이 궁금해요. 좋은 인연이 다가올까요?" },
+  { label: "금전운", icon: "🪙", prompt: "이번 달 금전운은 어떨까요?" },
+  { label: "건강운", icon: "🌿", prompt: "몸과 마음의 건강은 어떤가요?" },
+  { label: "학업운", icon: "📜", prompt: "제 학업운과 공부의 흐름이 궁금해요." },
 ];
 
 function createShuffledDeck(): number[] {
@@ -27,6 +28,7 @@ function createShuffledDeck(): number[] {
 }
 
 export default function ChatPage() {
+  const router = useRouter();
   const [phase, setPhase] = useState<Phase>("input");
   const [inputText, setInputText] = useState("");
   const [askedText, setAskedText] = useState("");
@@ -36,8 +38,8 @@ export default function ChatPage() {
   const [orientations, setOrientations] = useState<Record<number, boolean>>({}); // true면 역방향
   const [deck, setDeck] = useState<number[]>([]);
   const [isShuffling, setIsShuffling] = useState(false);
-  const [readingMode, setReadingMode] = useState<"free" | "paid">("free");
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const inputBoxRef = useRef<HTMLDivElement | null>(null);
   const { complete, completion, isLoading, error } = useCompletion({
     api: "/api/tarot",
     streamProtocol: "text",
@@ -48,12 +50,26 @@ export default function ChatPage() {
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    if (phase !== "input" || !inputRef.current) {
-      return;
-    }
+    if (phase !== "input" || !inputRef.current) return;
     inputRef.current.style.height = "auto";
-    inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 140)}px`;
+    inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 180)}px`;
   }, [inputText, phase]);
+
+  const shakeInput = () => {
+    const el = inputBoxRef.current;
+    if (!el || typeof el.animate !== "function") return;
+    el.animate(
+      [
+        { transform: "translateX(0)" },
+        { transform: "translateX(-6px)" },
+        { transform: "translateX(6px)" },
+        { transform: "translateX(-4px)" },
+        { transform: "translateX(4px)" },
+        { transform: "translateX(0)" },
+      ],
+      { duration: 380, easing: "ease-out" },
+    );
+  };
 
   const handleAsk = (question: string) => {
     const trimmedQuestion = question.trim();
@@ -61,11 +77,11 @@ export default function ChatPage() {
       return;
     }
 
-    setInputText(trimmedQuestion);
-    setUserQuestion(trimmedQuestion);
-    setAskedText(trimmedQuestion);
-    setHasRequestedReading(false);
-    setPhase("deck"); // 혹은 셔플 페이즈
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("question", trimmedQuestion);
+    }
+
+    router.push("/shuffle");
   };
 
   const handleShuffle = () => {
@@ -115,91 +131,93 @@ export default function ChatPage() {
   }, [phase, selectedCards.length, userQuestion, hasRequestedReading]);
 
   return (
-    <main className="relative min-h-screen w-full text-[#E0E0E0] font-sans flex flex-col overflow-x-hidden bg-[#121212]">
-      
-      {/* 1. ?꾨꼍?섍쾶 怨좎젙???꾩껜?붾㈃ 諛곌꼍 ?덉씠??*/}
-      <div className="fixed inset-0 w-screen h-screen z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[#121212]/80 z-10"></div>
-        {/* 寃쎈줈瑜?main_bg2.jpg 濡?媛뺤젣 吏??*/}
-        <img src="/cards/main_bg2.jpg" alt="background" className="w-full h-full object-cover z-0 opacity-70" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-      </div>
+    <main className="relative min-h-screen w-full text-[#E0E0E0] font-sans flex flex-col overflow-x-hidden bg-transparent">
 
       {/* 상단 헤더 영역 */}
       <header className="relative z-20 flex flex-col items-center pt-8 pb-4 border-b border-transparent w-full transition-all duration-500">
-        <h3 className="font-['Nosifer'] text-[#DCD8C0] drop-shadow-[0_0_15px_rgba(220,38,38,0.8)] text-2xl md:text-3xl tracking-[0.2em] mb-2">
-          WOLHA TAROT
-        </h3>
-        {/* input 페이즈에서만 한글 제목 표시하여 공간 확보 및 몰입감 증대 */}
-        {phase === 'input' && (
-          <h1 className="font-['East_Sea_Dokdo'] text-[#DCD8C0] drop-shadow-[0_0_10px_rgba(220,38,38,0.6)] text-5xl md:text-6xl animate-fadeIn">
-            월하 타로
-          </h1>
+        {phase !== "input" && (
+          <>
+            <h3 className="font-['Nosifer'] text-[#F5ECD7] drop-shadow-[0_0_20px_rgba(220,38,38,0.95)] text-2xl tracking-[0.2em] mb-2">
+              BYEOLBIT TAROT
+            </h3>
+            <h1 className="font-['East_Sea_Dokdo'] text-[#F5ECD7] drop-shadow-[0_0_18px_rgba(220,38,38,0.9)] text-6xl animate-fadeIn">
+              별빛 타로
+            </h1>
+            <div className="mt-2 h-px w-40 bg-[#C9A84C]/80 shadow-[0_0_12px_rgba(201,168,76,0.6)]" />
+          </>
         )}
       </header>
 
       {/* ?쒕??섏씠 ?ㅽ???諛뺤뒪??硫붿씤 肄섑뀗痢?(input ?곸뿭) */}
       {phase === 'input' && (
-        <div className="relative z-20 flex-1 flex flex-col items-center justify-center w-full px-4 py-12">
-          
-          {/* 以묒븰 ??댄? */}
-          <h2 className="text-[#E0E0E0] text-2xl md:text-4xl font-serif font-bold mb-8 text-center drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] tracking-widest">
-            당신의 마음을 적어보세요
-          </h2>
+        <div className="page relative z-20 w-full">
+          <div className="title-wrap">
+            <p className="title-en">Byeolbit Tarot</p>
+            <h1 className="title-ko">별빛 타로</h1>
+            <div className="title-divider"></div>
+            <p className="title-sub">별빛 아래 운명을 엿보는 곳</p>
+          </div>
 
-          <div className="w-full max-w-3xl mx-auto flex flex-col items-center px-[30px]">
-            <div className="w-full max-w-[504px] md:max-w-[540px] mx-auto rounded-full bg-black/40 backdrop-blur-2xl border border-[#8C2727]/30 shadow-[0_10px_30px_rgba(0,0,0,0.45)] flex items-center px-6 py-3 min-h-[96px]">
-              <div className="flex flex-1 items-center gap-3 min-w-0">
-                <div className="w-10 h-10 shrink-0 rounded-full border border-[#8C2727]/60 bg-[#1A0A0A]/80 flex items-center justify-center text-[#DCD8C0] text-lg shadow-[0_0_10px_rgba(140,39,39,0.35)]">
-                  ✶
-                </div>
-                <textarea
-                  ref={inputRef}
-                  rows={1}
-                  placeholder="어떤 고민을 안고 오셨습니까? 편하게 적어주세요..."
-                  className="flex-1 min-w-0 pl-4 bg-transparent text-[#ECEAD8] placeholder-[#BAB7A6] resize-none border-none outline-none focus:outline-none focus:ring-0 text-[17px] md:text-[19px] leading-relaxed max-h-[140px] overflow-y-auto custom-scrollbar font-serif"
-                  value={inputText}
-                  onChange={(e) => setInputText(e.currentTarget.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      if (inputText.trim() !== "") {
-                        handleAsk(inputText);
-                      }
+          <div className="input-card">
+            <div className="input-box" ref={inputBoxRef}>
+              <textarea
+                ref={inputRef}
+                rows={2}
+                placeholder="요즘 마음이 어떠신가요? 달빛 아래 편하게 이야기해 주세요."
+                className="custom-scrollbar"
+                value={inputText}
+                onChange={(e) => setInputText(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (inputText.trim() !== "") {
+                      handleAsk(inputText);
+                    } else {
+                      shakeInput();
+                    }
+                  }
+                }}
+              />
+              <div className="input-footer">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (inputText.trim() !== "") {
+                      handleAsk(inputText);
+                    } else {
+                      shakeInput();
                     }
                   }}
-                />
+                  className="btn-submit"
+                >
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path d="M2 8h12M9 3l5 5-5 5" />
+                  </svg>
+                  타로점 보기
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setReadingMode((prev) => (prev === "free" ? "paid" : "free"))}
-                className={`ml-3 shrink-0 rounded-full border px-3 py-1.5 text-[11px] md:text-xs font-serif transition-all duration-300 ${
-                  readingMode === "paid"
-                    ? "border-[#C6A86A]/80 text-[#D14F4F] shadow-[0_0_12px_rgba(220,38,38,0.38)]"
-                    : "border-[#C6A86A]/80 text-[#E9DEC3] shadow-[0_0_10px_rgba(233,222,195,0.24)]"
-                }`}
-              >
-                {readingMode === "paid" ? "유료(신령)" : "무료(일반)"}
-              </button>
             </div>
 
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: reduceMotion ? 0.1 : 0.45, ease: "easeOut" }}
-              className="mt-8 flex flex-wrap justify-center gap-6 w-full"
+              className="quick-btns"
             >
               {EXAMPLE_QUESTIONS.map((item) => (
                 <button
                   key={item.label}
                   type="button"
                   onClick={() => setInputText(item.prompt)}
-                  className="flex items-center space-x-2 px-5 py-3 bg-[#3A0A0A] border border-[#DCD8C0]/40 rounded-lg shadow-[0_0_15px_rgba(140,39,39,0.3)] text-[#DCD8C0] hover:-translate-y-1 hover:bg-[#5C1717] hover:shadow-[0_0_25px_rgba(140,39,39,0.6)] transition-all duration-300 cursor-pointer"
+                  className="btn-quick"
                 >
-                  <span className="text-xl">{item.icon}</span>
-                  {item.label}
+                  <span className="icon">{item.icon}</span>
+                  <span>{item.label}</span>
                 </button>
               ))}
             </motion.div>
+
+            <p className="hint">카드 세 장으로 오늘과 내일을 살짝 엿볼까요? ✨</p>
           </div>
         </div>
       )}
@@ -256,8 +274,8 @@ export default function ChatPage() {
                     </div>
                   )}
                   {phase === 'shuffling' && (
-                    <div className="text-[#8C1C1C] font-serif text-xl md:text-2xl tracking-widest animate-pulse">
-                      운명의 흐름을 섞는 중...
+                    <div className="text-[#d46b6b] font-serif text-xl md:text-2xl tracking-widest animate-pulse">
+                      별들이 카드를 섞고 있어요...
                     </div>
                   )}
                 </div>
@@ -274,9 +292,9 @@ export default function ChatPage() {
                 className="w-full max-w-5xl mx-auto pt-10 pb-20 overflow-hidden"
               >
                 <div className="mb-5 space-y-2 text-center">
-                  <p className="font-serif text-lg text-occult-text-main">[ 당신의 물음 : "{askedText}" ]</p>
-                  <p className="text-sm text-occult-text-muted">카드를 눌러 3장을 선택해주세요</p>
-                  <p className="text-sm font-medium text-occult-accent-text">선택한 카드: {selectedCards.length} / 3</p>
+                  <p className="font-serif text-lg text-[#fef9f0]">[ 당신의 질문 : "{askedText}" ]</p>
+                  <p className="text-sm text-[#fef9f0]/70">카드를 눌러 3장을 선택해 주세요</p>
+                  <p className="text-sm font-medium text-[#e8c96a]">선택한 카드: {selectedCards.length} / 3</p>
                 </div>
 
                 <motion.div
@@ -361,7 +379,7 @@ export default function ChatPage() {
 
             {phase === 'result' && (
               <div className="w-full flex flex-col items-center animate-fadeIn pb-20">
-                <h2 className="text-[#E0E0E0] text-xl md:text-3xl font-serif mb-12 mt-6 tracking-widest text-shadow-occult">운명의 응답</h2>
+                <h2 className="text-[#fef9f0] text-xl md:text-3xl font-serif mb-12 mt-6 tracking-widest drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]">별빛의 메시지</h2>
                 
                 {/* --- 기존 3장 카드 렌더링 영역 (유지) --- */}
                 <div className="flex flex-wrap justify-center gap-4 md:gap-8 max-w-6xl">
@@ -431,30 +449,30 @@ export default function ChatPage() {
                   transition={{ delay: 1.5, duration: 1 }}
                   className="w-full max-w-4xl mt-16 p-6 md:p-10 relative z-10 flex flex-col items-center"
                 >
-                  {/* 다크 글래스모피즘 배경 */}
-                  <div className="absolute inset-0 bg-[#0A0A0A]/80 backdrop-blur-md border border-[#8C2727]/30 rounded-2xl -z-10 shadow-[0_0_40px_rgba(140,39,39,0.15)]"></div>
+                  {/* 글래스모피즘 배경 */}
+                  <div className="absolute inset-0 bg-[#1a1f2e]/75 backdrop-blur-md border border-[#e8c96a]/25 rounded-2xl -z-10 shadow-[0_0_40px_rgba(232,201,106,0.15)]"></div>
 
                   {/* 타이틀 */}
-                  <h3 className="text-[#8C2727] font-serif text-lg md:text-xl mb-6 tracking-[0.4em] font-bold border-b border-[#8C2727]/30 pb-3 flex items-center gap-3">
-                    <span className="text-sm opacity-70"></span>
-                    월하의 점괘
-                    <span className="text-sm opacity-70"></span>
+                  <h3 className="text-[#e8c96a] font-serif text-lg md:text-xl mb-6 tracking-[0.4em] font-bold border-b border-[#e8c96a]/30 pb-3 flex items-center gap-3">
+                    <span className="text-sm opacity-70">✨</span>
+                    별빛의 해석
+                    <span className="text-sm opacity-70">✨</span>
                   </h3>
 
                   {/* 텍스트 렌더링 영역 */}
-                  <div className="text-[#DCD8C0] font-serif text-base md:text-lg leading-[2.2] md:leading-[2.5] whitespace-pre-wrap text-center md:text-left w-full min-h-[150px]">
+                  <div className="text-[#fef9f0] font-serif text-base md:text-lg leading-[2.2] md:leading-[2.5] whitespace-pre-wrap text-center md:text-left w-full min-h-[150px]">
                     {isLoading && !completion ? (
-                      <div className="flex flex-col items-center justify-center h-full opacity-70 animate-pulse mt-10">
-                        <span className="text-[#8C2727] mb-3"></span>
-                        <p>신령의 목소리를 듣고 있소... 향을 피우고 잠시 기다리시오...</p>
+                      <div className="flex flex-col items-center justify-center h-full opacity-80 animate-pulse mt-10">
+                        <span className="text-[#e8c96a] mb-3">✨</span>
+                        <p>별들이 당신의 이야기를 듣고 있어요... 잠시만 기다려 주세요...</p>
                       </div>
                     ) : error ? (
-                      <p className="text-[#D14F4F] drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
-                        점괘를 불러오지 못했소. 잠시 후 다시 시도하시오.
+                      <p className="text-[#e88787] drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                        메시지를 받아오지 못했어요. 잠시 후 다시 시도해 주세요.
                       </p>
                     ) : hasRequestedReading && !completion ? (
-                      <p className="text-[#A39E93] drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
-                        아직 점괘가 도착하지 않았소. 잠시 후 다시 시도하시오.
+                      <p className="text-[#fef9f0]/70 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                        별빛의 메시지를 기다리는 중이에요...
                       </p>
                     ) : (
                       <p className="drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">{completion}</p>

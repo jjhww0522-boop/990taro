@@ -1,4 +1,4 @@
-﻿@import url("https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,49 +6,412 @@
 
 :root {
   color-scheme: dark;
+  --bg-outer: #0f1419;
+  --bg-violet: rgba(59, 89, 152, 0.28);
+  --bg-crimson: rgba(212, 107, 107, 0.22);
+  --gold: #e8c96a;
+  --gold-light: #ffd98e;
+  --gold-glow: rgba(232, 201, 106, 0.45);
+  --crimson: #d46b6b;
+  --bg-dark: rgba(15, 20, 30, 0.65);
+  --bg-input: rgba(20, 25, 35, 0.70);
+  --ivory: #fef9f0;
+  --text-main: #fef9f0;
+  --text-muted: rgba(254, 249, 240, 0.60);
+  --border: rgba(232, 201, 106, 0.35);
 }
 
 * {
   box-sizing: border-box;
 }
 
+button {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus,
+button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 html,
 body {
-  height: 100%;
+  min-height: 100%;
   margin: 0;
   padding: 0;
-  color: #e0e0e0;
+  color: var(--ivory);
   font-family: "Gowun Batang", serif;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
-body {
-  font-family: "Gowun Batang", serif;
-  /* 1. 생성된 배경 이미지 적용 */
-  background-image: url("/cards/main_bg2.jpg"); /* 생성한 이미지 경로 */
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed; /* 스크롤 시 배경 고정 */
-  position: relative;
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 52% -8%, var(--bg-violet) 0%, rgba(15, 20, 25, 0) 48%),
+    radial-gradient(90% 68% at 18% 88%, var(--bg-crimson) 0%, rgba(15, 20, 25, 0) 56%),
+    radial-gradient(85% 58% at 84% 78%, rgba(232, 201, 106, 0.12) 0%, rgba(15, 20, 25, 0) 55%),
+    linear-gradient(180deg, #1a1f2e 0%, #0f1419 100%);
 }
 
-/* 2. 어둠의 장막 (Overlay) 필수 적용! */
-body::before {
-  content: "";
+.mist {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.45;
+  backdrop-filter: blur(12px);
+  background:
+    radial-gradient(52% 38% at 18% 74%, rgba(254, 249, 240, 0.08), rgba(254, 249, 240, 0) 70%),
+    radial-gradient(48% 35% at 79% 84%, rgba(232, 201, 106, 0.15), rgba(232, 201, 106, 0) 72%);
+  animation: mistPulse 10s ease-in-out infinite alternate;
+}
+
+.stars {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.star {
   position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--gold-light);
+  border-radius: 50%;
+  animation: twinkle var(--dur, 3s) ease-in-out infinite var(--delay, 0s) alternate;
+}
+
+.deco-line {
+  position: fixed;
   top: 0;
-  left: 0;
+  bottom: 0;
+  width: 1px;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(201, 168, 76, 0), rgba(201, 168, 76, 0.38), rgba(201, 168, 76, 0));
+}
+
+.deco-line.left {
+  left: 3rem;
+}
+
+.deco-line.right {
+  right: 3rem;
+}
+
+.page {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 0 1rem;
+}
+
+.title-wrap {
+  text-align: center;
+  margin-bottom: 2.8rem;
+  animation: fadeDown 1.2s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+@keyframes fadeDown {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.title-en {
+  font-family: "Noto Serif KR", serif;
+  font-size: clamp(0.75rem, 2vw, 1rem);
+  font-weight: 600;
+  letter-spacing: 0.38em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 0.55rem;
+  text-shadow: 0 0 20px var(--gold-glow);
+}
+
+.title-ko {
+  font-family: "Noto Serif KR", serif;
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-shadow: 0 0 40px var(--gold-glow), 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+.title-divider {
+  width: 48px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 1rem auto 0.7rem;
+}
+
+.title-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+}
+
+.input-card {
   width: 100%;
-  height: 100%;
-  /* 배경 위에 검은색 반투명 막을 씌워서 톤을 다운시킴 */
-  background: rgba(18, 18, 18, 0.85); /* 0.85 정도가 적당히 어둡고 좋음 */
-  z-index: -1; /* 컨텐츠 뒤로 보냄 */
+  max-width: 680px;
+  animation: fadeUp 1.4s cubic-bezier(.16, 1, .3, 1) .15s both;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.input-box {
+  position: relative;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 1rem 1.2rem;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 0 0 1px rgba(201, 168, 76, 0.08) inset,
+    0 8px 40px rgba(0, 0, 0, 0.6),
+    0 0 60px rgba(139, 26, 26, 0.12);
+  transition: border-color .3s, box-shadow .3s;
+}
+
+.input-box:focus-within {
+  border-color: rgba(201, 168, 76, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(201, 168, 76, 0.15) inset,
+    0 8px 40px rgba(0, 0, 0, 0.6),
+    0 0 80px rgba(201, 168, 76, 0.12);
+}
+
+textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  color: var(--text-main);
+  font-family: "Noto Sans KR", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 300;
+  line-height: 1.6;
+  min-height: 52px;
+  max-height: 180px;
+  overflow-y: auto;
+  caret-color: var(--gold);
+}
+
+textarea::placeholder {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+textarea::-webkit-scrollbar {
+  width: 3px;
+}
+
+textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+textarea::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.input-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(201, 168, 76, 0.1);
+}
+
+.btn-submit {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: linear-gradient(135deg, #d46b6b 0%, #b85c5c 100%);
+  border: 1px solid rgba(232, 201, 106, 0.5);
+  border-radius: 10px;
+  padding: 0.45rem 1.1rem;
+  color: #fef9f0;
+  font-family: "Noto Serif KR", serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all .25s;
+  white-space: nowrap;
+  box-shadow: 0 2px 12px rgba(232, 201, 106, 0.2);
+}
+
+.btn-submit:hover {
+  background: linear-gradient(135deg, #e88787 0%, #d46b6b 100%);
+  box-shadow: 0 0 25px rgba(232, 201, 106, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-submit:active {
+  transform: translateY(0);
+}
+
+.btn-submit svg {
+  width: 14px;
+  height: 14px;
+}
+
+.quick-btns {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+}
+
+.btn-quick {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(15, 8, 20, 0.65);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0.45rem 1rem;
+  color: var(--text-main);
+  font-family: "Noto Sans KR", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all .22s;
+  white-space: nowrap;
+}
+
+.btn-quick:hover {
+  background: rgba(212, 107, 107, 0.25);
+  border-color: rgba(232, 201, 106, 0.6);
+  color: var(--gold-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(232, 201, 106, 0.25);
+}
+
+.btn-quick .icon {
+  font-size: 0.95rem;
+}
+
+.hint {
+  margin-top: 1.6rem;
+  font-size: 0.72rem;
+  color: rgba(245, 236, 215, 0.3);
+  letter-spacing: 0.08em;
+  text-align: center;
+  animation: fadeUp 1.6s cubic-bezier(.16, 1, .3, 1) .3s both;
+}
+
+@keyframes mistPulse {
+  0% {
+    opacity: 0.56;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0.78;
+    transform: translateY(-9px);
+  }
+}
+
+@keyframes twinkle {
+  from {
+    opacity: 0.1;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 0.9;
+    transform: scale(1.4);
+  }
+}
+
+@media (max-width: 600px) {
+  .deco-line {
+    display: none;
+  }
+
+  .input-card {
+    max-width: 100%;
+  }
+
+  .quick-btns {
+    gap: 0.5rem;
+  }
+
+  .btn-quick {
+    font-size: 0.78rem;
+    padding: 0.4rem 0.85rem;
+  }
+
+  .title-ko {
+    font-size: 2.2rem;
+  }
 }
 
 @layer utilities {
   .font-serif {
     font-family: "Gowun Batang", serif !important;
   }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
+@keyframes moonlightPulse {
+  0% {
+    filter: brightness(1) drop-shadow(0 0 5px rgba(232, 201, 106, 0.4));
+  }
 
+  50% {
+    filter: brightness(1.2) drop-shadow(0 0 15px rgba(232, 201, 106, 0.9));
+  }
+
+  100% {
+    filter: brightness(1) drop-shadow(0 0 5px rgba(232, 201, 106, 0.4));
+  }
+}
+
+.moonlight-glow {
+  animation: moonlightPulse 3.5s infinite ease-in-out;
+}

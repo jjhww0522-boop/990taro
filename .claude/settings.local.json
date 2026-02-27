@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout:*)",
+      "Bash(claude --version)",
+      "Bash(claude whoami)",
+      "Bash(npx next build)"
+    ]
+  }
+}
