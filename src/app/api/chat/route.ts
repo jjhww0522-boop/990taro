@@ -27,6 +27,7 @@ const SYSTEM_PROMPT = `
 문장 어미는 "~해요", "~에요", "~이에요", "~거예요"를 중심으로 사용하세요.
 
 각 항목 해석 원칙:
+- [중요] 사용자가 선택항 상담 주제(category)를 해석의 가장 중요한 테마로 삼으세요 (예: 애정운이라면 사랑/관계 중심으로, 금전운이라면 재물/사업 방향으로 해석).
 - 반드시 해당 카드의 이름과 상징을 구체적으로 언급해요
 - 정방향/역방향에 따라 에너지 방향을 달리 해석해요 (역방향은 에너지가 내면으로 향하거나 막혀 있는 상태)
 - 사용자의 질문과 직접 연결해서 해석해요. 추상적인 표현보다 그 사람의 상황에 맞닿은 구체적인 말을 사용해요
@@ -150,8 +151,9 @@ export async function POST(req: Request) {
       }
     }
 
-    const body = (await req.json()) as { question?: string; cards?: InputCard[] };
+    const body = (await req.json()) as { question?: string; category?: string; cards?: InputCard[] };
     const question = (body.question ?? "").trim();
+    const category = body.category ?? "종합 운세";
     const effectiveQuestion = question || "제 운명이 어떻게 흘러갈지 궁금해요.";
     const userQuestion = question;
     const cards = Array.isArray(body.cards) ? body.cards.slice(0, 3) : [];
@@ -179,6 +181,7 @@ export async function POST(req: Request) {
     }
 
     const userPayload = {
+      category,
       question: effectiveQuestion,
       selectedCards: cards.map((card) => ({
         position: card.position,

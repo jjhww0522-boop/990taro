@@ -80,3 +80,19 @@ export function extractBearerToken(request: Request) {
   if (!scheme || !token || scheme.toLowerCase() !== "bearer") return null;
   return token.trim();
 }
+
+export function issueEntitlementJwt(orderId: string, sessionId: string, ttlSeconds = 86400) {
+  const secret = getJwtSecret();
+  const now = Math.floor(Date.now() / 1000);
+  const payload: EntitlementPayload = {
+    scope: "paid_session",
+    sid: sessionId,
+    oid: orderId,
+    iat: now,
+    exp: now + ttlSeconds,
+  };
+  const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const sig = createHmac("sha256", secret).update(`${header}.${body}`).digest("base64url");
+  return `${header}.${body}.${sig}`;
+}

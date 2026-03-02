@@ -83,13 +83,22 @@ async function enforceConsultLimit(
   limit: number,
   ttlSeconds: number,
 ): Promise<{ blocked: boolean; remainingTurns: number }> {
+  const conf = getUpstashConfig();
+
+  // Upstash 미설정 환경(개발 로컬 등)에서는 제한 없이 허용
+  if (!conf) {
+    console.warn("[consult] Upstash not configured — skipping rate limit (dev mode)");
+    return { blocked: false, remainingTurns: limit };
+  }
+
   try {
     const count = await upstashIncrKey(key);
     if (count === 1) await upstashExpireNx(key, ttlSeconds);
     if (count > limit) return { blocked: true, remainingTurns: 0 };
     return { blocked: false, remainingTurns: limit - count };
-  } catch {
+  } catch (e) {
     // Upstash 장애 시 허용 (degraded mode)
+    console.error("[consult] Upstash error, allowing request in degraded mode", e);
     return { blocked: false, remainingTurns: limit - 1 };
   }
 }
@@ -142,21 +151,23 @@ export async function POST(req: Request) {
     const body = (await req.json()) as ConsultRequest;
     const { cards = [], initialReading, originalQuestion, history = [], message } = body;
 
+    console.log("[consult] request received — isPremium:", isPremium, "| hasCards:", cards.length, "| hasMessage:", Boolean(message));
+
     const cardDesc =
       cards.length > 0
         ? cards
-            .map((c) => `- ${c.position}: ${c.name} (${c.isReversed ? "역방향" : "정방향"})`)
-            .join("\n")
+          .map((c) => `- ${c.position}: ${c.name} (${c.isReversed ? "역방향" : "정방향"})`)
+          .join("\n")
         : "카드 정보 없음";
 
     const readingDesc = initialReading
       ? [
-          `과거: ${initialReading.past}`,
-          `현재: ${initialReading.present}`,
-          `미래: ${initialReading.future}`,
-          `총평: ${initialReading.overall}`,
-          `조언: ${initialReading.advice}`,
-        ].join("\n")
+        `과거: ${initialReading.past}`,
+        `현재: ${initialReading.present}`,
+        `미래: ${initialReading.future}`,
+        `총평: ${initialReading.overall}`,
+        `조언: ${initialReading.advice}`,
+      ].join("\n")
       : "초기 해석 없음";
 
     const systemPrompt = `너는 밤하늘의 별빛처럼 따뜻하고 지혜로운 타로 상담사예요. 실제 타로 가게에 앉아 손님과 마주 보며 이야기 나누듯, 진심을 담아 대화해요.
