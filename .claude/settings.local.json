@@ -4,7 +4,11 @@
       "Bash(git checkout:*)",
       "Bash(claude --version)",
       "Bash(claude whoami)",
-      "Bash(npx next build)"
+      "Bash(npx next build)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npm install @tosspayments/tosspayments-sdk)",
+      "Bash(wc -l /c/Users/EKR/Desktop/990taro/src/app/api/*/route.ts /c/Users/EKR/Desktop/990taro/src/app/api/*/*/route.ts)",
+      "Bash(xargs grep -l \"export const metadata\")"
     ]
   }
 }

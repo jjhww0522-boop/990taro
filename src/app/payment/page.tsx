@@ -1,11 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Suspense } from "react";
 
 type PaymentMethod = "tosspay" | "kakaopay" | "card" | null;
+
+const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY ?? "";
+const IS_DEMO = !TOSS_CLIENT_KEY || TOSS_CLIENT_KEY.startsWith("여기에");
+
+const TOSS_METHOD_MAP: Record<NonNullable<Exclude<PaymentMethod, null>>, string> = {
+    tosspay: "토스페이",
+    kakaopay: "카카오페이",
+    card: "카드",
+};
+
+function generateOrderId() {
+    return `taro-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 function PaymentContent() {
     const router = useRouter();
@@ -14,33 +27,59 @@ function PaymentContent() {
 
     const [selected, setSelected] = useState<PaymentMethod>(null);
     const [isPaying, setIsPaying] = useState(false);
-    const [step, setStep] = useState<"select" | "confirm" | "processing">("select");
+    const [step, setStep] = useState<"select" | "processing">("select");
+    const [errorMsg, setErrorMsg] = useState("");
 
-    const orderId = `taro-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    // orderId는 마운트 시 1회 생성 후 고정
+    const orderIdRef = useRef(generateOrderId());
+    const orderId = orderIdRef.current;
 
     const handlePay = async () => {
-        if (!selected) return;
+        if (!selected || isPaying) return;
         setStep("processing");
         setIsPaying(true);
+        setErrorMsg("");
 
-        // ── 실제 API 연동 시 이 부분을 교체하세요 ──
-        // 토스페이먼츠:
-        // const toss = await loadTossPayments(process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY!);
-        // await toss.requestPayment("카드", { amount: 990, orderId, orderName: "별빛타로 프리미엄 1일" });
-        //
-        // 카카오페이:
-        // const res = await fetch("/api/payment/kakao-ready", { method:"POST", body: JSON.stringify({ orderId }) });
-        // const { next_redirect_pc_url } = await res.json();
-        // window.location.href = next_redirect_pc_url;
-        // ────────────────────────────────────────────
+        try {
+            if (!IS_DEMO) {
+                // ── 실제 토스페이먼츠 결제 (SDK v2) ────────────────────────────
+                const { loadTossPayments, ANONYMOUS } = await import("@tosspayments/tosspayments-sdk");
+                const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
+                const payment = tossPayments.payment({ customerKey: ANONYMOUS });
 
-        // 현재: 데모 시뮬레이션 (3초 후 성공)
-        await new Promise(r => setTimeout(r, 2800));
+                const successUrl = `${window.location.origin}/payment/success?returnTo=${encodeURIComponent(returnTo)}`;
+                const failUrl    = `${window.location.origin}/payment/fail`;
 
-        // 데모 성공 → /payment/success로 이동 (실제 결제 시 PG사가 리다이렉트)
-        router.push(
-            `/payment/success?orderId=${orderId}&amount=990&paymentKey=DEMO_${Date.now()}&returnTo=${encodeURIComponent(returnTo)}`
-        );
+                // requestPayment 후 PG가 successUrl / failUrl 로 리다이렉트
+                await payment.requestPayment({
+                    method: "CARD",
+                    amount: { currency: "KRW", value: 990 },
+                    orderId,
+                    orderName: "별빛 타로 프리미엄 1일권",
+                    successUrl,
+                    failUrl,
+                    card: {
+                        useEscrow: false,
+                        flowMode: "DEFAULT",
+                        useCardPoint: false,
+                        useAppCardOnly: false,
+                    },
+                });
+                // ────────────────────────────────────────────────────────────────
+                // Redirect 방식이므로 이 아래 코드는 실행되지 않습니다.
+            } else {
+                // ── 데모 시뮬레이션 (키 없을 때) ────────────────────────────────
+                await new Promise(r => setTimeout(r, 2400));
+                router.push(
+                    `/payment/success?orderId=${orderId}&amount=990&paymentKey=DEMO_${Date.now()}&returnTo=${encodeURIComponent(returnTo)}`
+                );
+            }
+        } catch (e) {
+            const msg = (e as Error).message ?? "결제 요청 중 오류가 발생했어요.";
+            setErrorMsg(msg);
+            setStep("select");
+            setIsPaying(false);
+        }
     };
 
     const methods = [
@@ -54,7 +93,6 @@ function PaymentContent() {
                 </svg>
             ),
             desc: "토스 앱 또는 계좌이체",
-            color: "#0064FF",
         },
         {
             id: "kakaopay" as PaymentMethod,
@@ -66,7 +104,6 @@ function PaymentContent() {
                 </svg>
             ),
             desc: "카카오 계정으로 간편결제",
-            color: "#FFE812",
         },
         {
             id: "card" as PaymentMethod,
@@ -78,11 +115,11 @@ function PaymentContent() {
                 </svg>
             ),
             desc: "국내 모든 카드 사용 가능",
-            color: "#666",
         },
     ];
 
     if (step === "processing") {
+        const methodLabel = selected ? TOSS_METHOD_MAP[selected] : "";
         return (
             <main className="min-h-screen flex flex-col items-center justify-center bg-[#0c1020] text-[#fef9f0] px-4">
                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center gap-6 text-center">
@@ -93,7 +130,7 @@ function PaymentContent() {
                     </div>
                     <div>
                         <p className="text-lg font-semibold text-[#ffd98e]">결제 처리 중</p>
-                        <p className="text-sm text-[#fef9f0]/50 mt-1">{selected === "kakaopay" ? "카카오페이" : selected === "tosspay" ? "토스페이" : "카드"}로 연결 중이에요...</p>
+                        <p className="text-sm text-[#fef9f0]/50 mt-1">{methodLabel}로 연결 중이에요...</p>
                     </div>
                 </motion.div>
             </main>
@@ -109,6 +146,14 @@ function PaymentContent() {
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
                     뒤로
                 </button>
+
+                {/* 데모 모드 배너 */}
+                {IS_DEMO && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/25 text-yellow-400 text-xs">
+                        <span>⚠️</span>
+                        <span>테스트 모드 — 실제 결제가 이루어지지 않습니다</span>
+                    </div>
+                )}
 
                 {/* 상품 정보 카드 */}
                 <div className="rounded-2xl border border-[#e8c96a]/25 bg-[#1a1f2e]/80 backdrop-blur-xl p-6">
@@ -159,6 +204,13 @@ function PaymentContent() {
                     </div>
                 </div>
 
+                {/* 에러 메시지 */}
+                {errorMsg && (
+                    <p className="text-red-400 text-sm text-center bg-red-500/10 rounded-xl px-4 py-3 border border-red-500/20">
+                        {errorMsg}
+                    </p>
+                )}
+
                 {/* 결제 버튼 */}
                 <motion.button
                     type="button"
@@ -174,7 +226,7 @@ function PaymentContent() {
                 </motion.button>
 
                 <p className="text-center text-[11px] text-[#fef9f0]/25 leading-relaxed">
-                    결제 시 이용약관에 동의하는 것으로 간주됩니다.<br />
+                    결제 시 <a href="/terms" className="underline hover:text-[#fef9f0]/50 transition-colors">이용약관</a>에 동의하는 것으로 간주됩니다.<br />
                     이용 기간: 결제 완료 후 24시간
                 </p>
             </motion.div>

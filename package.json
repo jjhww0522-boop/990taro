@@ -17,6 +17,7 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.31",
     "@ai-sdk/react": "^3.0.101",
+    "@tosspayments/tosspayments-sdk": "^2.5.0",
     "ai": "^6.0.99",
     "framer-motion": "^12.34.3",
     "lucide-react": "^0.575.0",

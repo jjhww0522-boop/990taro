@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://wolha-tarot.kr/sitemap.xml
+Sitemap: https://990taro.vercel.app/sitemap.xml

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "카드 셔플 의식 | 월하 타로",
-  description: "무녀 점사 전, 운명의 패를 섞는 신비로운 동양 타로 셔플 화면",
-  keywords: ["동양 타로", "무녀 점사", "셔플"],
+  title: "카드 셔플",
+  description: "별빛이 당신의 카드를 섞고 있어요. 잠시 마음을 가다듬고 질문에 집중해 보세요.",
+  keywords: ["별빛 타로", "AI 타로", "카드 셔플", "타로 카드"],
 };
 
 export default function ShuffleLayout({ children }: { children: React.ReactNode }) {

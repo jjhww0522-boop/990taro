@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import AdBanner from "../../components/AdBanner";
 
 type SelectedCard = { slot: number; cardIndex: number; name: string; image: string; isReversed: boolean };
 type Divination = { past: string; present: string; future: string; overall: string; advice: string };
@@ -249,10 +250,29 @@ export default function ResultPage() {
                     </motion.div>
                     <div className={`relative mx-auto rounded-xl transition-all duration-700 ${isCurrent ? "shadow-[0_0_60px_rgba(232,201,106,0.4)]" : "grayscale-[0.3]"}`} style={{ height: "358px", width: "238px" }}>
                       {isCurrent && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.7 }} className="absolute inset-0 -z-10 blur-[40px] mix-blend-screen rounded-full pointer-events-none" style={{ backgroundImage: `url(${card.image})`, backgroundSize: "cover", transform: "scale(1.25) translateY(5%)" }} />}
-                      <img src={card.image} alt={card.name} className="h-full w-full object-contain rounded-xl relative z-10 border border-white/10" style={{ transform: card.isReversed ? "rotate(180deg)" : "none" }} />
-                      {card.isReversed && <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20"><div className="px-3 py-1 rounded-md font-bold text-xs backdrop-blur-md border bg-[#d46b6b]/90 text-[#fef9f0] border-[#e8c96a]/70">逆 (역방향)</div></div>}
+                      <img src={card.image} alt={card.name} className="h-full w-full object-cover rounded-xl relative z-10 border border-white/10" style={{ transform: card.isReversed ? "rotate(180deg)" : "none" }} />
+                      {/* 역방향 뱃지는 이미지 div 내부에 두지 않음 - 카드 이름과 겹침 방지 */}
                     </div>
-                    <motion.div animate={{ opacity: isCurrent ? 1 : 0, y: isCurrent ? 0 : -10 }} className="mt-6 text-[#ffd98e] text-xl md:text-2xl font-serif tracking-[0.2em]">{card.name}</motion.div>
+                    {/* 역방향 뱃지 - 카드 이미지와 카드 이름 사이에 배치 */}
+                    {card.isReversed && (
+                      <motion.div
+                        animate={{ opacity: isCurrent ? 1 : 0 }}
+                        className="mt-4 flex justify-center pointer-events-none"
+                      >
+                        <div
+                          className="flex items-center gap-1 px-4 py-1 rounded-full backdrop-blur-md"
+                          style={{
+                            background: "linear-gradient(135deg, rgba(139,26,26,0.80) 0%, rgba(60,8,8,0.70) 100%)",
+                            border: "1px solid rgba(232,140,140,0.30)",
+                            boxShadow: "0 0 14px rgba(180,40,40,0.30), inset 0 1px 0 rgba(255,180,180,0.12)",
+                          }}
+                        >
+                          <span style={{ fontSize: "10px", color: "#ffb4b4", letterSpacing: "0.15em", fontFamily: "serif", fontWeight: 500 }}>✦ 역방향 ✦</span>
+                        </div>
+                      </motion.div>
+                    )}
+                    <motion.div animate={{ opacity: isCurrent ? 1 : 0, y: isCurrent ? 0 : -10 }} className={`${card.isReversed ? "mt-3" : "mt-6"} text-[#ffd98e] text-xl md:text-2xl font-serif tracking-[0.2em]`}>{card.name}</motion.div>
+
                   </motion.div>
                 );
               })}
@@ -276,57 +296,8 @@ export default function ResultPage() {
             </AnimatePresence>
           </div>
 
-          {/* ── 내가 뒤은 카드 3장 요약 스트립 ── */}
-          {result && (
-            <div className="relative z-20 w-full max-w-[480px] mx-auto mb-4 px-4">
-              <p className="text-[10px] text-[#fef9f0]/35 tracking-widest text-center mb-2 uppercase">내가 뽑은 카드 — 클릭하면 자세히 봐요</p>
-              <div className="flex justify-center gap-3">
-                {cards.map((card, i) => {
-                  const reading = i === 0 ? result.past : i === 1 ? result.present : result.future;
-                  return (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setShowCardModal(showCardModal === i ? null : i)}
-                      className="group flex flex-col items-center gap-1.5 flex-1 max-w-[130px] rounded-2xl p-2 border border-[#e8c96a]/20 bg-white/5 hover:bg-white/10 hover:border-[#e8c96a]/50 transition-all"
-                    >
-                      <div className="relative w-full" style={{ paddingBottom: "150%" }}>
-                        <img
-                          src={card.image} alt={card.name}
-                          className="absolute inset-0 w-full h-full object-cover rounded-xl border border-white/10"
-                          style={{ transform: card.isReversed ? "rotate(180deg)" : "none" }}
-                        />
-                        {card.isReversed && (
-                          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 bg-[#d46b6b]/90 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">逆</div>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-[#fef9f0]/50 tracking-widest">{LABELS[i]}</span>
-                      <span className="text-[11px] text-[#ffd98e] font-semibold text-center leading-tight">{card.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* 카드 상세 팝업 */}
-              {showCardModal !== null && cards[showCardModal] && (
-                <div className="mt-3 rounded-2xl border border-[#e8c96a]/30 bg-[#0f1419]/95 backdrop-blur-xl p-4 text-center relative">
-                  <button onClick={() => setShowCardModal(null)} className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center text-[#fef9f0]/40 hover:text-[#fef9f0]">
-                    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                  </button>
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-[10px] text-[#fef9f0]/40 tracking-widest">{LABELS[showCardModal]}</span>
-                    <span className="text-[#ffd98e] font-serif text-[15px]">{cards[showCardModal].name}</span>
-                    {cards[showCardModal].isReversed && <span className="text-[10px] bg-[#d46b6b]/80 text-white px-1.5 py-0.5 rounded">逆역</span>}
-                  </div>
-                  <p className="text-[13px] text-[#fef9f0]/80 leading-[1.8]" style={{ wordBreak: "keep-all" }}>
-                    {showCardModal === 0 ? result.past : showCardModal === 1 ? result.present : result.future}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* 대화 시작 버튼 */}
+
           <div className="relative z-20 w-full px-4 mb-20 flex justify-center">
             {result && (
               <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.3 }} className="w-full flex justify-center">
@@ -436,6 +407,9 @@ export default function ResultPage() {
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 16, height: 16 }}><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" /></svg>
                       결과 공유하기
                     </button>
+                  </div>
+                  <div style={{ marginTop: "1.5rem", width: "100%" }}>
+                    <AdBanner slot="chat-exhausted" format="rectangle" responsive={true} />
                   </div>
                 </div>
               )}

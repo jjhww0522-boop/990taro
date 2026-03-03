@@ -26,14 +26,13 @@
 }
 
 button {
-  outline: none !important;
   -webkit-tap-highlight-color: transparent;
 }
 
-button:focus,
-button:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
 
 html,
@@ -450,4 +449,28 @@ textarea::-webkit-scrollbar-thumb {
 
 .moonlight-glow {
   animation: moonlightPulse 3.5s infinite ease-in-out;
+}
+
+/* --- 개발 환경 전용 모바일 뷰어 토글 --- */
+body.dev-mobile-view {
+  background-color: #05080a !important;
+}
+
+body.dev-mobile-view>*:not(script):not(style):not(button) {
+  max-width: 480px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  position: relative;
+  outline: 1px dashed rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+  background-color: #0f1419;
+}
+
+body.dev-mobile-view .bg-layer,
+body.dev-mobile-view .mist,
+body.dev-mobile-view .stars,
+body.dev-mobile-view .deco-line {
+  max-width: 480px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
 }
