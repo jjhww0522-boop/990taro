@@ -19,7 +19,6 @@ const TOTAL = MAJOR_ARCANA.length; // 22
 // 무한 루프를 위해 카드를 3배 복제 [0..21, 0..21, 0..21]
 // 실제 카드 인덱스는 virtualIndex % TOTAL로 계산
 const VIRTUAL_COUNT = TOTAL * 3;
-const COPIES = 3;
 
 export default function PickPage() {
   const router = useRouter();
@@ -406,7 +405,7 @@ export default function PickPage() {
     <main className="relative min-h-screen w-full overflow-hidden bg-transparent text-[#DCD8C0]">
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-10 md:px-10">
         <header className="mb-4 text-center" style={{ marginTop: "20px" }}>
-          <h1 className="text-sm md:text-3xl font-bold tracking-tight text-[#DCD8C0] drop-shadow-[0_0_14px_rgba(140,39,39,0.45)] whitespace-nowrap">
+          <h1 className="text-sm md:text-3xl font-bold tracking-tight text-[#DCD8C0] drop-shadow-[0_0_14px_rgba(140,39,39,0.45)]">
             {statusText}
           </h1>
         </header>
@@ -425,7 +424,7 @@ export default function PickPage() {
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
-            style={{ touchAction: "pan-y" }}
+            style={{ touchAction: "none" }}
           >
             {/* 카드 트랙 — transform으로 이동, 총 너비는 가상 66장 */}
             <div

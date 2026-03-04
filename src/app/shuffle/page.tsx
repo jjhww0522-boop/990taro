@@ -71,8 +71,9 @@ export default function ShufflePage() {
       className="relative min-h-screen w-full overflow-hidden bg-transparent text-[#DCD8C0]"
     >
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center justify-center px-6">
-        <p className="mb-14 text-center text-lg md:text-2xl leading-relaxed text-[#DCD8C0] drop-shadow-[0_0_12px_rgba(140,39,39,0.45)]">
-          별빛 아래 운명의 카드를 섞고 있습니다, 잠시만 기다려 주세요...
+        <p className="mb-14 text-center text-base md:text-2xl leading-relaxed text-[#DCD8C0] drop-shadow-[0_0_12px_rgba(140,39,39,0.45)]">
+          별빛 아래 운명의 카드를 섞고 있습니다<br className="md:hidden" />
+          {" "}잠시만 기다려 주세요...
         </p>
 
         <motion.div
