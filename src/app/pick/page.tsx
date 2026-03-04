@@ -70,7 +70,9 @@ export default function PickPage() {
       ? "별빛이 카드를 거두고 있어요 ✨"
       : selectedCards.length >= MAX_SELECT
         ? "선택이 완료되었어요 ✨"
-        : `세 장의 카드를 골라주세요 ( ${selectedCards.length} / 3 )`;
+        : "세 장의 카드를 골라주세요";
+
+  const showCounter = exitPhase === "idle" && selectedCards.length < MAX_SELECT;
 
   // ── 카드 선택 토글 ────────────────────────────────────────────────────
   const toggleCard = useCallback(
@@ -405,9 +407,14 @@ export default function PickPage() {
     <main className="relative min-h-screen w-full overflow-hidden bg-transparent text-[#DCD8C0]">
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-10 md:px-10">
         <header className="mb-4 text-center" style={{ marginTop: "20px" }}>
-          <h1 className="text-sm md:text-3xl font-bold tracking-tight text-[#DCD8C0] drop-shadow-[0_0_14px_rgba(140,39,39,0.45)]">
+          <h1 className="text-sm md:text-3xl font-bold tracking-tight text-[#DCD8C0] drop-shadow-[0_0_14px_rgba(140,39,39,0.45)] whitespace-nowrap">
             {statusText}
           </h1>
+          {showCounter && (
+            <p className="mt-1 text-xs md:text-base tracking-widest text-[#e8c96a]/80">
+              {selectedCards.length} / 3
+            </p>
+          )}
         </header>
 
         <section className="overflow-visible flex-1 flex items-center">
