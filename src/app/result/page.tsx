@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useRef, type CSSProperties } from "re
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import AdBanner from "../../components/AdBanner";
+import MinorCardPick from "../../components/MinorCardPick";
+import { drawMinorCards, type MinorCard } from "../../lib/minorArcanaData";
 
 type SelectedCard = { slot: number; cardIndex: number; name: string; image: string; isReversed: boolean };
 type Divination = { past: string; present: string; future: string; overall: string; advice: string };
@@ -42,9 +44,14 @@ export default function ResultPage() {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isWatchingAd, setIsWatchingAd] = useState(false);
-  const [showCardModal, setShowCardModal] = useState<number | null>(null); // 콴드 넷으는 카드 인덱스
+  const [showCardModal, setShowCardModal] = useState<number | null>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // 마이너 아르카나 상태
+  const [minorCards, setMinorCards] = useState<MinorCard[]>([]);
+  const [showMinorPick, setShowMinorPick] = useState(false);
+  const [hasUsedMinor, setHasUsedMinor] = useState(false); // 무료 사용자: 1회 제한
 
   const hasSeenAllCards = seenCards.size === 3 || chatPhase === "chatting";
   const isExhausted = remainingTurns === 0;
@@ -172,6 +179,41 @@ export default function ResultPage() {
       setRemainingTurns(data.remainingTurns);
     } catch { setChatMessages(p => [...p, { role: "assistant", content: "별빛 연결이 끊어졌어요. 다시 전송해 주세요." }]); }
     finally { setIsChatLoading(false); }
+  };
+
+  // 마이너 카드 선택 핸들러
+  const handleMinorCardSelect = async (card: MinorCard, isReversed: boolean) => {
+    setShowMinorPick(false);
+    setHasUsedMinor(true);
+    const direction = isReversed ? "역방향" : "정방향";
+    const userMsg = `추가로 카드를 뽑았어요: [${card.name} (${card.original}) · ${direction}] — 키워드: ${isReversed ? card.reversed : card.upright}`;
+    setChatMessages(prev => [...prev, { role: "user", content: `🃏 마이너 카드: ${card.name} (${direction})` }]);
+    setIsChatLoading(true);
+    try {
+      const fullMsg = userMsg;
+      const res = await fetch("/api/chat/consult", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(deviceIdRef.current ? { "x-device-id": deviceIdRef.current } : {}), ...(entitlementRef.current ? { Authorization: `Bearer ${entitlementRef.current}` } : {}) },
+        body: JSON.stringify({ cards: payloadCardsRef.current, initialReading: result, originalQuestion: originalQuestionRef.current, history: chatMessages, message: fullMsg }),
+      });
+      const data = await res.json() as { message: string; remainingTurns: number };
+      setChatMessages(p => [...p, { role: "assistant", content: data.message }]);
+      if (data.remainingTurns !== undefined) setRemainingTurns(data.remainingTurns);
+    } catch {
+      setChatMessages(p => [...p, { role: "assistant", content: "카드를 읽는 도중 연결이 끊어졌어요. 다시 시도해 주세요." }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  // 마이너 카드 뽑기 버튼 핸들러
+  const handleOpenMinorPick = () => {
+    if (hasUsedMinor && !isPremium) {
+      setShowPaymentModal(true);
+      return;
+    }
+    setMinorCards(drawMinorCards(5));
+    setShowMinorPick(true);
   };
 
   const goToPrev = useCallback(() => { if (cards.length) setCurrentIndex(p => (p - 1 + cards.length) % cards.length); }, [cards.length]);
@@ -414,6 +456,37 @@ export default function ResultPage() {
                 </div>
               )}
             </div>
+
+            {/* 마이너 카드 뽑기 영역 */}
+            {chatPhase === "chatting" && !isExhausted && (
+              <div style={{ flexShrink: 0, borderTop: "1px solid rgba(232,201,106,0.08)", padding: "0.5rem 1.5rem 0" }}>
+                {showMinorPick ? (
+                  <MinorCardPick
+                    cards={minorCards}
+                    onSelect={handleMinorCardSelect}
+                    disabled={isChatLoading}
+                  />
+                ) : (
+                  <div style={{ display: "flex", justifyContent: "center", paddingBottom: "0.25rem" }}>
+                    <button
+                      type="button"
+                      onClick={handleOpenMinorPick}
+                      disabled={isChatLoading}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 6,
+                        padding: "6px 14px", borderRadius: 20, fontSize: 12, cursor: "pointer",
+                        background: hasUsedMinor && !isPremium ? "rgba(255,255,255,0.04)" : "rgba(232,201,106,0.1)",
+                        border: `1px solid ${hasUsedMinor && !isPremium ? "rgba(255,255,255,0.1)" : "rgba(232,201,106,0.3)"}`,
+                        color: hasUsedMinor && !isPremium ? "rgba(255,249,240,0.4)" : "#ffd98e",
+                      }}
+                    >
+                      <span>🃏</span>
+                      <span>{hasUsedMinor && !isPremium ? "마이너 카드 추가 뽑기 (프리미엄)" : "✦ 마이너 카드 한 장 더 뽑기"}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 입력창 */}
             <div style={{ flexShrink: 0, padding: "1rem 1.5rem", borderTop: "1px solid rgba(255,255,255,0.07)", background: "rgba(12,16,32,0.85)" }}>
