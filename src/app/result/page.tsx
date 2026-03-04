@@ -29,6 +29,7 @@ export default function ResultPage() {
   const [limitMessage, setLimitMessage] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [dragStart, setDragStart] = useState(0);
+  const dragStartYRef = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isChangingCard, setIsChangingCard] = useState(false);
   const [seenCards, setSeenCards] = useState<Set<number>>(new Set([0]));
@@ -265,9 +266,17 @@ export default function ResultPage() {
     return () => window.removeEventListener("keydown", handler);
   }, [goToPrev, goToNext, chatPhase]);
 
-  const handleDragStart = (e: React.PointerEvent) => { setDragStart(e.clientX); setIsDragging(false); };
+  const handleDragStart = (e: React.PointerEvent) => { setDragStart(e.clientX); dragStartYRef.current = e.clientY; setIsDragging(false); };
   const handleDragMove = (e: React.PointerEvent) => { if (dragStart === 0) return; if (Math.abs(e.clientX - dragStart) > 10) setIsDragging(true); };
-  const handleDragEnd = (e: React.PointerEvent) => { if (dragStart === 0) return; const diff = e.clientX - dragStart; if (Math.abs(diff) > 80) { if (diff > 0) goToPrev(); else goToNext(); } setDragStart(0); setIsDragging(false); };
+  const handleDragCancel = () => { setDragStart(0); setIsDragging(false); };
+  const handleDragEnd = (e: React.PointerEvent) => {
+    if (dragStart === 0) return;
+    const dx = e.clientX - dragStart;
+    const dy = Math.abs(e.clientY - dragStartYRef.current);
+    // 세로 이동이 더 크면 스크롤로 판단 → 카드 전환 안 함
+    if (Math.abs(dx) > 80 && Math.abs(dx) > dy) { if (dx > 0) goToPrev(); else goToNext(); }
+    setDragStart(0); setIsDragging(false);
+  };
 
   // ── 로딩 ──
   if (isLoading) {
@@ -316,7 +325,7 @@ export default function ResultPage() {
 
           {/* 캐러셀 */}
           <div className="relative flex items-center justify-center mb-2 w-full mt-2">
-            <div className="relative flex items-center justify-center select-none" style={{ perspective: "1800px", minHeight: `${480 * cardScaleRatio}px`, height: "50vh", width: "100%", maxWidth: "900px" }} onPointerDown={handleDragStart} onPointerMove={handleDragMove} onPointerUp={handleDragEnd} onPointerCancel={handleDragEnd}>
+            <div className="relative flex items-center justify-center select-none" style={{ perspective: "1800px", minHeight: `${480 * cardScaleRatio}px`, height: "50vh", width: "100%", maxWidth: "900px", touchAction: "pan-y" }} onPointerDown={handleDragStart} onPointerMove={handleDragMove} onPointerUp={handleDragEnd} onPointerCancel={handleDragCancel}>
               {cards.map((card, idx) => {
                 const offset = getCircularOffset(idx);
                 const isCurrent = idx === currentIndex;
@@ -381,16 +390,32 @@ export default function ResultPage() {
 
           <div className="relative z-20 w-full px-4 mb-20 flex justify-center">
             {result && (
-              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.3 }} className="w-full flex justify-center">
-                <button
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.3 }}
+                className="w-full flex flex-col items-center gap-3"
+              >
+                <motion.button
                   type="button"
-                  onClick={() => { console.log("🎯 버튼 클릭! result:", !!result); startChat(); }}
-                  className="inline-flex w-full max-w-[320px] items-center justify-center gap-3 rounded-full border border-[#e8c96a]/40 bg-gradient-to-b from-[#1a1f2e] to-[#0c1020] px-6 py-4 hover:border-[#e8c96a] hover:shadow-[0_0_60px_rgba(232,201,106,0.3)] hover:-translate-y-1 active:scale-95 transition-all duration-300 group shadow-[0_10px_40px_rgba(0,0,0,0.6)]"
+                  onClick={() => startChat()}
+                  animate={{ boxShadow: ["0 0 20px rgba(232,201,106,0.3)", "0 0 45px rgba(232,201,106,0.65)", "0 0 20px rgba(232,201,106,0.3)"] }}
+                  transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full max-w-[340px] flex flex-col items-center justify-center gap-0.5 rounded-2xl px-6 py-5 transition-all duration-200"
+                  style={{
+                    background: "linear-gradient(135deg, #c59a1f 0%, #e8c96a 50%, #c59a1f 100%)",
+                    border: "1px solid rgba(255,220,100,0.5)",
+                  }}
                 >
-                  <span className="text-xl">✨</span>
-                  <span className="text-[15px] md:text-[17px] font-bold text-[#ffd98e]">별빛 상담 시작하기</span>
-                </button>
-                <style jsx>{`@keyframes buttonShimmer{0%{transform:skewX(-25deg) translateX(-150%);}100%{transform:skewX(-25deg) translateX(250%);}}`}</style>
+                  <span className="flex items-center gap-2">
+                    <span className="text-xl">✨</span>
+                    <span className="text-[17px] md:text-[19px] font-bold text-[#0c1020] tracking-tight">별빛 상담 시작하기</span>
+                  </span>
+                  <span className="text-[11px] text-[#0c1020]/60 tracking-wide">카드 해석에 대해 AI와 직접 대화해 보세요</span>
+                </motion.button>
+                <p className="text-[11px] text-[#fef9f0]/30 tracking-wider">무료 {FREE_CONSULT_LIMIT}회 · 프리미엄 {PREMIUM_CONSULT_LIMIT}회</p>
               </motion.div>
             )}
           </div>
