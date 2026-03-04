@@ -3,10 +3,13 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
     // ─── 보안 헤더 ─────────────────────────────────────────────────────────────
     async headers() {
+        const isDev = process.env.NODE_ENV === "development";
+
         const contentSecurityPolicy = [
             "default-src 'self'",
-            // 스크립트: 자기 자신 + Google(GA4·AdSense) + Toss Payments
-            "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://js.tosspayments.com",
+            // 개발 환경: Next.js HMR이 eval()을 사용하므로 unsafe-eval 허용
+            // 배포 환경: 제거
+            `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://js.tosspayments.com`,
             // 스타일: 자기 자신 + Google Fonts
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             // 폰트: Google Fonts CDN

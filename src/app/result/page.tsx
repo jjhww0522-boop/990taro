@@ -12,6 +12,9 @@ type Divination = { past: string; present: string; future: string; overall: stri
 type ChatMessage = { role: "user" | "assistant"; content: string };
 type ChatPhase = "reading" | "chatting";
 
+const RESULT_CACHE_KEY = "resultCache";
+const CHAT_CACHE_KEY = "chatCache";
+
 const POSITIONS = ["past", "present", "future"] as const;
 const LABELS = ["과거", "현재", "미래"] as const;
 const FREE_CONSULT_LIMIT = 2;
@@ -51,7 +54,8 @@ export default function ResultPage() {
   // 마이너 아르카나 상태
   const [minorCards, setMinorCards] = useState<MinorCard[]>([]);
   const [showMinorPick, setShowMinorPick] = useState(false);
-  const [hasUsedMinor, setHasUsedMinor] = useState(false); // 무료 사용자: 1회 제한
+  const [hasUsedMinor, setHasUsedMinor] = useState(false);
+  const [suggestMinorDraw, setSuggestMinorDraw] = useState(false); // GPT가 제안할 때만 true
 
   const hasSeenAllCards = seenCards.size === 3 || chatPhase === "chatting";
   const isExhausted = remainingTurns === 0;
@@ -84,7 +88,7 @@ export default function ResultPage() {
     originalQuestionRef.current = question;
     setIsPremium(Boolean(cleanEntitlement));
 
-    if (!rawCards) { setIsLoading(false); return; }
+    if (!rawCards) { router.replace("/"); return; }
 
     const parsed = (JSON.parse(rawCards) as SelectedCard[]).slice(0, 3);
     setCards(parsed);
@@ -96,6 +100,17 @@ export default function ResultPage() {
 
     payloadCardsRef.current = parsed.map((c, i) => ({ position: POSITIONS[i], name: c.name, isReversed: c.isReversed }));
 
+    // 캐시 키: 질문 + 카드 조합으로 유니크하게 생성 (다른 질문은 다른 캐시)
+    const cacheKey = `${RESULT_CACHE_KEY}_${question}_${parsed.map(c => `${c.cardIndex}${c.isReversed ? "r" : "u"}`).join("_")}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        setResult(JSON.parse(cached) as Divination);
+        setIsLoading(false);
+        return;
+      } catch { /* 캐시 파싱 실패 시 무시하고 재호출 */ }
+    }
+
     fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(dId ? { "x-device-id": dId } : {}), ...(cleanEntitlement ? { Authorization: `Bearer ${cleanEntitlement}` } : {}) },
@@ -103,7 +118,10 @@ export default function ResultPage() {
     })
       .then(async res => {
         if (res.status === 429) { const p = await res.json() as { error?: string }; setLimitMessage(p.error ?? "오늘의 무료 해석은 모두 사용하셨어요."); setResult({ past: p.error ?? "", present: "990원으로 더 들으실 수 있어요.", future: "내일 다시 오세요.", overall: "오늘의 무료 해석은 여기까지예요.", advice: "프리미엄을 이용해 보세요." }); return; }
-        setResult(await res.json() as Divination);
+        const data = await res.json() as Divination;
+        setResult(data);
+        // 결과 캐시 저장 (새로고침 시 재사용, 동일 질문+카드 조합에만 적용)
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(data)); } catch { /* ignore */ }
       })
       .catch(() => setResult({ past: "과거에는 정리되지 않은 감정들이 있었어요.", present: "지금은 중심을 잡고 생각할 시간이에요.", future: "곧 길이 열릴 거예요.", overall: "세 장의 카드는 용기를 내라고 말해요.", advice: "오늘 하루를 차분하게 보내세요." }))
       .finally(() => setIsLoading(false));
@@ -160,31 +178,52 @@ export default function ResultPage() {
     setChatMessages(p => [...p, { role: "assistant", content: "💎 프리미엄 결제 완료! 이제 더 깊은 이야기를 나눌 수 있어요." }]);
   };
 
+  // 대기 중인 메시지 (카드 선택 후 전송)
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [showInlinePick, setShowInlinePick] = useState(false);
+  const [inlinePickCards, setInlinePickCards] = useState<MinorCard[]>([]);
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = chatInput.trim();
     if (!text || isChatLoading || remainingTurns === 0) return;
     setChatInput("");
     setChatMessages(prev => [...prev, { role: "user", content: text }]);
+    // 메시지 저장하고 마이너 카드 5장 표시
+    setPendingMessage(text);
+    setInlinePickCards(drawMinorCards(5));
+    setShowInlinePick(true);
+  };
+
+  // 사용자가 인라인 MinorCardPick에서 카드를 선택했을 때
+  const handleInlineMinorSelect = async (card: MinorCard, isReversed: boolean) => {
+    setShowInlinePick(false);
+    const direction = isReversed ? "역방향" : "정방향";
+    const keyword = isReversed ? card.reversed : card.upright;
+    setChatMessages(prev => [...prev, { role: "assistant", content: `🃏 **${card.name}** (${card.original}) · ${direction}\n키워드: ${keyword}` }]);
     setIsChatLoading(true);
     try {
+      const selectedMinorCard = { name: card.name, original: card.original, isReversed, keyword };
       const res = await fetch("/api/chat/consult", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(deviceIdRef.current ? { "x-device-id": deviceIdRef.current } : {}), ...(entitlementRef.current ? { Authorization: `Bearer ${entitlementRef.current}` } : {}) },
-        body: JSON.stringify({ cards: payloadCardsRef.current, initialReading: result, originalQuestion: originalQuestionRef.current, history: chatMessages, message: text }),
+        body: JSON.stringify({ cards: payloadCardsRef.current, initialReading: result, originalQuestion: originalQuestionRef.current, history: chatMessages, message: pendingMessage ?? "", selectedMinorCard }),
       });
       if (!res.ok) { const errBody = await res.json().catch(() => ({}) as Record<string, unknown>); setChatMessages(p => [...p, { role: "assistant", content: (errBody as { message?: string }).message ?? "다시 시도해 주세요." }]); if (res.status === 429) setRemainingTurns(0); return; }
-      const data = await res.json() as { message: string; remainingTurns: number };
+      const data = await res.json() as { message: string; remainingTurns: number; suggestMinorDraw?: boolean };
       setChatMessages(p => [...p, { role: "assistant", content: data.message }]);
       setRemainingTurns(data.remainingTurns);
+      if (data.suggestMinorDraw) setSuggestMinorDraw(true);
     } catch { setChatMessages(p => [...p, { role: "assistant", content: "별빛 연결이 끊어졌어요. 다시 전송해 주세요." }]); }
-    finally { setIsChatLoading(false); }
+    finally { setIsChatLoading(false); setPendingMessage(null); }
   };
+
 
   // 마이너 카드 선택 핸들러
   const handleMinorCardSelect = async (card: MinorCard, isReversed: boolean) => {
     setShowMinorPick(false);
     setHasUsedMinor(true);
+    setSuggestMinorDraw(false); // 뽑고 나면 버튼 다시 숨김
     const direction = isReversed ? "역방향" : "정방향";
     const userMsg = `추가로 카드를 뽑았어요: [${card.name} (${card.original}) · ${direction}] — 키워드: ${isReversed ? card.reversed : card.upright}`;
     setChatMessages(prev => [...prev, { role: "user", content: `🃏 마이너 카드: ${card.name} (${direction})` }]);
@@ -349,8 +388,7 @@ export default function ResultPage() {
                   className="inline-flex w-full max-w-[320px] items-center justify-center gap-3 rounded-full border border-[#e8c96a]/40 bg-gradient-to-b from-[#1a1f2e] to-[#0c1020] px-6 py-4 hover:border-[#e8c96a] hover:shadow-[0_0_60px_rgba(232,201,106,0.3)] hover:-translate-y-1 active:scale-95 transition-all duration-300 group shadow-[0_10px_40px_rgba(0,0,0,0.6)]"
                 >
                   <span className="text-xl">✨</span>
-                  <span className="text-[15px] md:text-[17px] font-bold text-[#ffd98e]">본격적인 대화 나누기</span>
-                  <span className="text-[10px] bg-[#d46b6b] text-white px-2 py-0.5 rounded-sm font-black animate-pulse">Free</span>
+                  <span className="text-[15px] md:text-[17px] font-bold text-[#ffd98e]">별빛 상담 시작하기</span>
                 </button>
                 <style jsx>{`@keyframes buttonShimmer{0%{transform:skewX(-25deg) translateX(-150%);}100%{transform:skewX(-25deg) translateX(250%);}}`}</style>
               </motion.div>
@@ -428,6 +466,12 @@ export default function ResultPage() {
                   </div>
                 </div>
               ))}
+              {/* 인라인 마이너 카드 뽑기 — 질문 후 표시 */}
+              {showInlinePick && inlinePickCards.length > 0 && (
+                <div style={{ margin: "0.75rem 0", padding: "0.5rem 0" }}>
+                  <MinorCardPick cards={inlinePickCards} onSelect={handleInlineMinorSelect} />
+                </div>
+              )}
               {isChatLoading && (
                 <div style={{ display: "flex", alignItems: "flex-end", gap: "0.625rem" }}>
                   <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(232,201,106,0.12)", border: "1px solid rgba(232,201,106,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 14 }}>✨</div>
@@ -457,8 +501,8 @@ export default function ResultPage() {
               )}
             </div>
 
-            {/* 마이너 카드 뽑기 영역 */}
-            {chatPhase === "chatting" && !isExhausted && (
+            {/* 마이너 카드 뽑기 영역 — GPT가 제안할 때만 표시 */}
+            {chatPhase === "chatting" && !isExhausted && suggestMinorDraw && (
               <div style={{ flexShrink: 0, borderTop: "1px solid rgba(232,201,106,0.08)", padding: "0.5rem 1.5rem 0" }}>
                 {showMinorPick ? (
                   <MinorCardPick

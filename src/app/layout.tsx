@@ -94,7 +94,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <div className="deco-line right" />
         <GNB />
 
-        <main className="relative z-10 mx-auto flex min-h-screen w-full flex-col items-center justify-center px-4 md:px-8">
+        <main className="relative z-10 mx-auto flex min-h-screen w-full flex-col items-center justify-center px-4 md:px-8 md:pt-14">
           <div className="w-full max-w-7xl flex-1 relative flex flex-col">{children}</div>
           <SiteFooter />
         </main>

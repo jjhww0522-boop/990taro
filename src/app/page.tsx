@@ -191,7 +191,7 @@ export default function ChatPage() {
 
       {/* ?쒕??섏씠 ?ㅽ???諛뺤뒪??硫붿씤 肄섑뀗痢?(input ?곸뿭) */}
       {phase === 'input' && (
-        <div className="page relative z-20 w-full flex flex-col items-center justify-center min-h-[75vh]">
+        <div className="page relative z-20 w-full flex flex-col items-center justify-center py-16 gap-0">
           {/* 타이틀 */}
           <div className="flex flex-col items-center text-center w-full mb-8">
             <div className="title-wrap w-full flex flex-col items-center">
@@ -244,12 +244,7 @@ export default function ChatPage() {
             </div>
 
             {/* 카테고리 버튼 */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: reduceMotion ? 0.1 : 0.4, ease: "easeOut" }}
-              className="w-full flex flex-col items-center mt-5"
-            >
+            <div className="w-full flex flex-col items-center mt-5">
               <p className="text-[#e8c96a]/70 text-xs mb-3 font-medium tracking-wide">버튼을 누르면 대표 질문이 자동 입력돼요</p>
               <div className="grid grid-cols-2 md:flex md:flex-row md:flex-nowrap justify-center gap-x-3 gap-y-3 md:gap-4 w-full mx-auto">
                 {EXAMPLE_QUESTIONS.map((item) => (
@@ -275,7 +270,8 @@ export default function ChatPage() {
                   </button>
                 ))}
               </div>
-            </motion.div>
+            </div>
+
 
             <p className="hint mt-4 mb-2">카드 세 장으로 오늘과 내일을 살짝 엿볼까요? ✨</p>
           </div>

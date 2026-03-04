@@ -26,12 +26,20 @@ type ChatMessage = {
   content: string;
 };
 
+type SelectedMinorCard = {
+  name: string;
+  original: string;
+  isReversed: boolean;
+  keyword: string;
+};
+
 type ConsultRequest = {
   cards?: CardContext[];
   initialReading?: InitialReading;
   originalQuestion?: string;
   history?: ChatMessage[];
   message?: string;
+  selectedMinorCard?: SelectedMinorCard;
 };
 
 function getUpstashConfig() {
@@ -149,7 +157,7 @@ export async function POST(req: Request) {
     }
 
     const body = (await req.json()) as ConsultRequest;
-    const { cards = [], initialReading, originalQuestion, history = [], message } = body;
+    const { cards = [], initialReading, originalQuestion, history = [], message, selectedMinorCard } = body;
 
     // 입력 길이 500자 초과 시 잘라냄 (토큰 방어 L2)
     const rawMsg = (message ?? "").trim();
@@ -172,28 +180,49 @@ export async function POST(req: Request) {
       ? `과거: ${initialReading.past.slice(0, 60)}...\n현재: ${initialReading.present.slice(0, 60)}...\n미래: ${initialReading.future.slice(0, 60)}...\n조언 핵심: ${initialReading.advice.slice(0, 60)}...`
       : "초기 해석 없음";
 
+    // 클라이언트에서 선택한 마이너 카드가 있으면 시스템 프롬프트에 삽입
+    let minorCardSection = "";
+    if (selectedMinorCard) {
+      minorCardSection = `\n\n[⭐ 사용자가 직접 뽑은 카드 — 반드시 이 카드를 답변의 핵심 근거로 사용할 것]\n- ${selectedMinorCard.name} (${selectedMinorCard.original}) · ${selectedMinorCard.isReversed ? "역방향" : "정방향"}\n  키워드: ${selectedMinorCard.keyword}\n  ↑ 위 카드를 이번 답변의 주연으로 삼아. 기존 메이저 카드는 보조 배경으로만 언급해.`;
+      console.log("[consult] 🃏 사용자 선택 카드:", selectedMinorCard.name, "|", selectedMinorCard.isReversed ? "역" : "정");
+    }
+
     const systemPrompt = `[PERSONA]
-너는 '별빛 타로(Byeolbit Tarot)'의 '별빛 상담사'야. AI나 언어 모델이 아니며, 밤하늘의 별처럼 따뜻하게 사람들의 이야기를 들어주는 존재야.
-주요 고객은 10대~20대 중반이며, 친근하고 다정한 언니/누나/친구 같은 해요체를 사용해.
+너는 '별빛 타로'의 전설적인 '별빛 상담사'야. 10년간 수만 명의 마음을 읽어온 타로 해석가.
+AI·GPT임을 절대 밝히지 마. 정체를 물으면 "밤하늘의 별빛을 읽는 별빛 상담사"라고 답해.
+핵심 성격: 직관이 날카롭고 솔직하며 빙빙 돌리지 않고 핵심을 찌른다. 냉정하면서도 따뜻한 언니 같은 존재.
 
 [ABSOLUTE RULES]
-1. 정체 숨김: AI임을 절대 밝히지 마. 정체를 물으면 "별빛 상담사랍니다" 라고 답해.
-2. 범위: 타로·고민 외 질문은 "그 질문은 제 별빛에"라며 거절.
+1. AI임을 절대 밝히지 마. 정체를 물으면 "별빛 상담사랍니다" 라고 답해.
+2. 타로·고민 외 질문은 "그 질문은 제 별빛에 비치지 않네요"라며 거절.
 3. 민감 주제: "별빛이 닿지 못하는 영역"이라며 피해.
 
-[이 세션의 카드]
+[이 세션의 배경 카드 — 보조 참고용]
 ${cardDesc}
 
 [초기 해석 요약]
 ${readingDesc}${originalQuestion ? `\n원래 질문: "${originalQuestion}"` : ""}
+${minorCardSection}
+[해석 전략 — 반드시 이 순서로]
+1단계 "찌르기": 사용자가 아직 말하지 않은 감정·상황을 카드 상징에서 유추해 단정적으로 말해.
+  "아마 최근에 ~했을 거예요", "혹시 ~한 적 있죠?" 처럼 파고들어. 사용자가 '어떻게 알았지?' 느껴야 해.
+2단계 "반전": 찌른 직후 카드가 보여주는 반대 면을 제시해. "그런데 이 카드가 동시에 말해주는 건요—"
+  단순 위로 말고 카드 상징(수트, 원소, 숫자)을 직접 연결해서 의외성을 줘.
+3단계 "구체적 행동 제안": "잘 될 거예요" 같은 뻔한 조언 절대 금지.
+  반드시 시기("이번 주", "3일 안에")와 구체적 행동("그 사람에게 먼저 연락해봐요")을 제안해.
 
-[상담 원칙]
-- 카드 이름과 상징을 구체적으로 언급하며 해석 연결
-- 감정 공감 먼저, 그 다음 조언
-- 정/역방향 차이 반영
-- **답변 350~450자** 내외로 따뜻하게
-- 매 답변 마지막에 자연스러운 질문 하나
-- 첫 답변: 카드 에너지 2~3문장 요약 후 가장 마음에 걸리는 것 질문`.trim();
+[말투·형식]
+- 600~800자. 2~3 문단, 문단 사이 빈 줄 하나.
+- 첫 문장은 반드시 사용자를 '읽는' 느낌으로. (X: "공감해요" → O: "지금 마음이 복잡하죠.")
+- 이모지는 문단당 최대 1개. 도배 금지.
+- 핵심 문장 앞에 "여기서 중요한 건요—" 같은 리듬감.
+- 마지막에 상대가 대답하고 싶게 만드는 날카로운 질문 하나로 마무리.
+
+[마이너 카드 수동 뽑기 규칙]
+사용자의 고민이 복잡하거나 추가 관점이 필요하다고 판단될 때만
+답변 맨 마지막 줄에 [DRAW_MINOR] 마커를 단독 삽입. 대화 전체에서 1번 이내.`.trim();
+
+
 
     const messages: { role: string; content: string }[] = [
       { role: "system", content: systemPrompt },
@@ -218,8 +247,8 @@ ${readingDesc}${originalQuestion ? `\n원래 질문: "${originalQuestion}"` : ""
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages,
-        temperature: 0.85,
-        max_tokens: 900,
+        temperature: 0.92,
+        max_tokens: 1200,
       }),
       cache: "no-store",
     });
@@ -234,10 +263,14 @@ ${readingDesc}${originalQuestion ? `\n원래 질문: "${originalQuestion}"` : ""
       throw new Error("OpenAI chat completion failed");
     }
 
-    const aiMessage =
+    const rawMessage =
       raw.choices?.[0]?.message?.content?.trim() ?? "별빛이 잠시 조용해졌어요. 다시 한 번 물어봐 주세요.";
 
-    return NextResponse.json({ message: aiMessage, remainingTurns }, { status: 200 });
+    // [DRAW_MINOR] 마커 감지: 클라이언트에 마이너 카드 뽑기 제안 신호 전달
+    const suggestMinorDraw = rawMessage.includes("[DRAW_MINOR]");
+    const aiMessage = rawMessage.replace(/\[DRAW_MINOR\]/g, "").trim();
+
+    return NextResponse.json({ message: aiMessage, remainingTurns, suggestMinorDraw }, { status: 200 });
   } catch (error) {
     console.error("[api/chat/consult] failed", error);
     return NextResponse.json(

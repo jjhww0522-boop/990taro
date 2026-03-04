@@ -36,18 +36,17 @@ export function GNB() {
 
   return (
     <>
+      {/* 데스크탑 GNB: 상단 고정 */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between px-5 md:px-8 h-14"
+        className="hidden md:flex fixed top-0 left-0 right-0 z-50 items-center justify-between px-8 h-14"
         style={{
           background: "rgba(12, 16, 32, 0.85)",
           backdropFilter: "blur(16px)",
-          borderTop: "1px solid rgba(232, 201, 106, 0.12)",
+          borderBottom: "1px solid rgba(232, 201, 106, 0.12)",
         }}
       >
-        {/* 데스크탑 링크 (모바일에서는 햄버거 메뉴 사용) */}
-
         {/* 데스크탑 링크 */}
-        <div className="hidden md:flex items-center gap-1">
+        <div className="flex items-center gap-1">
           {NAV_LINKS.map(({ href, label }) => {
             const isActive = pathname.startsWith(href);
             return (
@@ -70,7 +69,7 @@ export function GNB() {
         {/* 데스크탑: 리딩 시작 버튼 */}
         <Link
           href="/"
-          className="hidden md:flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-all duration-200 hover:opacity-90 active:scale-95"
+          className="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-all duration-200 hover:opacity-90 active:scale-95"
           style={{
             background: "linear-gradient(135deg, rgba(232,201,106,0.9) 0%, rgba(200,160,70,0.9) 100%)",
             color: "#0c1020",
@@ -80,30 +79,45 @@ export function GNB() {
           <span className="text-xs">✦</span>
           <span>리딩 시작</span>
         </Link>
+      </nav>
 
-        {/* 모바일: 햄버거 버튼 */}
+      {/* 모바일 GNB: 하단 고정 */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center h-16"
+        style={{
+          background: "rgba(12, 16, 32, 0.92)",
+          backdropFilter: "blur(16px)",
+          borderTop: "1px solid rgba(232, 201, 106, 0.18)",
+        }}
+      >
         <button
           type="button"
-          className="md:hidden flex flex-col items-center justify-center w-9 h-9 rounded-lg transition-colors"
-          style={{ background: isOpen ? "rgba(232,201,106,0.12)" : "transparent" }}
+          className="flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all duration-200"
+          style={{
+            background: isOpen ? "rgba(232,201,106,0.15)" : "rgba(255,255,255,0.04)",
+            border: `1px solid ${isOpen ? "rgba(232,201,106,0.4)" : "rgba(255,255,255,0.08)"}`,
+          }}
           onClick={() => setIsOpen((v) => !v)}
           aria-expanded={isOpen}
           aria-controls="mobile-nav"
           aria-label="메뉴 열기"
         >
           <motion.span
-            className="block w-5 h-[2px] bg-[#ffd98e] rounded-full"
-            animate={isOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
+            className="block w-6 rounded-full"
+            style={{ height: "2.5px", background: "#ffd98e" }}
+            animate={isOpen ? { rotate: 45, y: 7 } : { rotate: 0, y: 0 }}
             transition={{ duration: 0.2 }}
           />
           <motion.span
-            className="block w-5 h-[2px] bg-[#ffd98e] rounded-full mt-1"
-            animate={isOpen ? { opacity: 0 } : { opacity: 1 }}
+            className="block w-6 rounded-full mt-[5px]"
+            style={{ height: "2.5px", background: "#ffd98e" }}
+            animate={isOpen ? { opacity: 0, scaleX: 0 } : { opacity: 1, scaleX: 1 }}
             transition={{ duration: 0.15 }}
           />
           <motion.span
-            className="block w-5 h-[2px] bg-[#ffd98e] rounded-full mt-1"
-            animate={isOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
+            className="block w-6 rounded-full mt-[5px]"
+            style={{ height: "2.5px", background: "#ffd98e" }}
+            animate={isOpen ? { rotate: -45, y: -7 } : { rotate: 0, y: 0 }}
             transition={{ duration: 0.2 }}
           />
         </button>
