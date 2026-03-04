@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Edge Rate Limiter — API 경로에만 적용
-// IP당 분당 최대 15회 요청 허용 (메모리 기반, Vercel Edge 환경)
-// Upstash 없이도 동작하는 경량 방어선
-
-const RATE_LIMIT_MAX = 15;        // 분당 최대 요청 수
+// ─── 설정 ───────────────────────────────────────────────────────────────────
+const RATE_LIMIT_MAX = 15;        // 분당 최대 요청 수 (per IP)
 const RATE_LIMIT_WINDOW = 60_000; // 1분 (ms)
 
-// Edge 메모리 캐시 (Vercel Edge 인스턴스 단위)
+// 허용된 Origin 목록 (CSRF 방어)
+const ALLOWED_ORIGINS = [
+    "https://990taro.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:3001",
+];
+
+// ─── Rate Limit 캐시 ────────────────────────────────────────────────────────
 const rateLimitCache = new Map<string, { count: number; resetAt: number }>();
 
 function getClientIp(req: NextRequest): string {
@@ -23,21 +27,17 @@ function isRateLimited(ip: string): boolean {
     const record = rateLimitCache.get(ip);
 
     if (!record || now > record.resetAt) {
-        // 새 윈도우 시작
         rateLimitCache.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
         return false;
     }
 
     record.count += 1;
-    if (record.count > RATE_LIMIT_MAX) {
-        return true;
-    }
+    if (record.count > RATE_LIMIT_MAX) return true;
 
     rateLimitCache.set(ip, record);
     return false;
 }
 
-// 오래된 캐시 항목 정리 (메모리 누수 방지)
 function pruneCache() {
     const now = Date.now();
     for (const [key, val] of rateLimitCache) {
@@ -45,15 +45,36 @@ function pruneCache() {
     }
 }
 
+// ─── CSRF Origin 검증 ────────────────────────────────────────────────────────
+function isCsrfBlocked(req: NextRequest): boolean {
+    // GET / HEAD / OPTIONS 는 CSRF 무관
+    if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return false;
+
+    const origin = req.headers.get("origin");
+    // Origin 헤더 없으면 서버-to-서버 or 구형 브라우저 — 차단하지 않음
+    if (!origin) return false;
+
+    return !ALLOWED_ORIGINS.includes(origin);
+}
+
+// ─── 미들웨어 본체 ────────────────────────────────────────────────────────────
 export function middleware(req: NextRequest) {
     const { pathname } = req.nextUrl;
 
-    // API 경로에만 rate limit 적용
+    // API 경로에만 적용
     if (!pathname.startsWith("/api/")) {
         return NextResponse.next();
     }
 
-    // 100요청마다 캐시 정리
+    // CSRF 방어
+    if (isCsrfBlocked(req)) {
+        return NextResponse.json(
+            { error: "허용되지 않은 요청 출처예요." },
+            { status: 403 },
+        );
+    }
+
+    // Rate Limit
     if (Math.random() < 0.01) pruneCache();
 
     const ip = getClientIp(req);
