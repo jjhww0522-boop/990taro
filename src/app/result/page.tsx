@@ -413,7 +413,7 @@ export default function ResultPage() {
                     <span className="text-xl">✨</span>
                     <span className="text-[17px] md:text-[19px] font-bold text-[#0c1020] tracking-tight">별빛 상담 시작하기</span>
                   </span>
-                  <span className="text-[11px] text-[#0c1020]/60 tracking-wide">카드 해석에 대해 AI와 직접 대화해 보세요</span>
+                  <span className="text-[11px] text-[#0c1020]/60 tracking-wide">선택한 카드를 바탕으로 대화를 나눠볼까요?</span>
                 </motion.button>
                 <p className="text-[11px] text-[#fef9f0]/30 tracking-wider">무료 {FREE_CONSULT_LIMIT}회 · 프리미엄 {PREMIUM_CONSULT_LIMIT}회</p>
               </motion.div>
