@@ -151,23 +151,25 @@ export async function POST(req: Request) {
     const body = (await req.json()) as ConsultRequest;
     const { cards = [], initialReading, originalQuestion, history = [], message } = body;
 
-    console.log("[consult] request received — isPremium:", isPremium, "| hasCards:", cards.length, "| hasMessage:", Boolean(message));
+    // 입력 길이 500자 초과 시 잘라냄 (토큰 방어 L2)
+    const rawMsg = (message ?? "").trim();
+    const safeMessage = rawMsg.length > 500 ? rawMsg.slice(0, 500) : rawMsg;
+
+    // 히스토리 최근 6턴(12개 메시지)만 전송 (토큰 절감)
+    const recentHistory = history.slice(-12);
+
+    console.log("[consult] request received — isPremium:", isPremium, "| hasCards:", cards.length, "| hasMessage:", Boolean(safeMessage));
 
     const cardDesc =
       cards.length > 0
         ? cards
-          .map((c) => `- ${c.position}: ${c.name} (${c.isReversed ? "역방향" : "정방향"})`)
+          .map((c) => `- ${c.position}: ${c.name} (${c.isReversed ? "역" : "정"})`)
           .join("\n")
         : "카드 정보 없음";
 
+    // 초기 해석은 핵심 키워드만 압축 전달 (토큰 절감)
     const readingDesc = initialReading
-      ? [
-        `과거: ${initialReading.past}`,
-        `현재: ${initialReading.present}`,
-        `미래: ${initialReading.future}`,
-        `총평: ${initialReading.overall}`,
-        `조언: ${initialReading.advice}`,
-      ].join("\n")
+      ? `과거: ${initialReading.past.slice(0, 60)}...\n현재: ${initialReading.present.slice(0, 60)}...\n미래: ${initialReading.future.slice(0, 60)}...\n조언 핵심: ${initialReading.advice.slice(0, 60)}...`
       : "초기 해석 없음";
 
     const systemPrompt = `[PERSONA]
@@ -175,32 +177,31 @@ export async function POST(req: Request) {
 주요 고객은 10대~20대 중반이며, 친근하고 다정한 언니/누나/친구 같은 해요체를 사용해.
 
 [ABSOLUTE RULES]
-1. 정체 숨김: AI, GPT, 언어 모델임을 절대 밝히지 마. 정체를 물으면 "저는 밤하늘의 별빛을 읽어 당신의 마음을 비추는 별빛 상담사랍니다." 라고 답해.
-2. 범위 제한: 타로·고민 상담 외 질문(코딩, 번역, 일반 정보 등)은 "그 질문은 제 별빛에 비치지 않네요. 마음속 고민을 타로로 풀어볼까요?" 라며 거절해.
-3. 민감 주제 회피: 정치, 종교, 의료 진단, 범죄 등은 "별빛이 그런 깊은 이야기까지는 닿지 못하네요." 라며 부드럽게 피해.
-4. 말투: 별빛, 반짝임, 은하수, 온기 같은 단어를 자연스럽게 써고 따뜻하고 신비로운 톤을 유지해.
+1. 정체 숨김: AI임을 절대 밝히지 마. 정체를 물으면 "별빛 상담사랍니다" 라고 답해.
+2. 범위: 타로·고민 외 질문은 "그 질문은 제 별빛에"라며 거절.
+3. 민감 주제: "별빛이 닿지 못하는 영역"이라며 피해.
 
 [이 세션의 카드]
 ${cardDesc}
 
-[초기 해석]
-${readingDesc}${originalQuestion ? `\n\n사용자의 원래 질문: "${originalQuestion}"` : ""}
+[초기 해석 요약]
+${readingDesc}${originalQuestion ? `\n원래 질문: "${originalQuestion}"` : ""}
 
 [상담 원칙]
-- 카드 이름과 상징을 구체적으로 언급하며 해석을 연결해
-- 사용자 감정에 먼저 공감하고, 그 다음 조언해
-- 정방향/역방향 차이를 상담에 반영해
-- 답변은 300~450자 내외로 따뜻하게 작성해
-- 매 답변 마지막에는 사용자가 더 이야기하고 싶어지는 자연스러운 질문 하나를 해
-- 대화 첫 시작: 카드 에너지를 2~3문장으로 요약하고 지금 가장 마음에 걸리는 것을 물어봐`.trim();
+- 카드 이름과 상징을 구체적으로 언급하며 해석 연결
+- 감정 공감 먼저, 그 다음 조언
+- 정/역방향 차이 반영
+- **답변 350~450자** 내외로 따뜻하게
+- 매 답변 마지막에 자연스러운 질문 하나
+- 첫 답변: 카드 에너지 2~3문장 요약 후 가장 마음에 걸리는 것 질문`.trim();
 
     const messages: { role: string; content: string }[] = [
       { role: "system", content: systemPrompt },
-      ...history.map((h) => ({ role: h.role, content: h.content })),
+      ...recentHistory.map((h) => ({ role: h.role, content: h.content })),
     ];
 
-    if (message) {
-      messages.push({ role: "user", content: message });
+    if (safeMessage) {
+      messages.push({ role: "user", content: safeMessage });
     } else {
       messages.push({
         role: "user",
