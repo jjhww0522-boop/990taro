@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { AgentationDevtools } from "../components/AgentationDevtools";
 import { GNB } from "../components/GNB";
 import { SiteFooter } from "../components/SiteFooter";
 import StarParticles from "../components/StarParticles";
-import MobileViewToggler from "../components/MobileViewToggler";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -43,6 +43,13 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 
 type RootLayoutProps = {
   children: React.ReactNode;
@@ -50,7 +57,7 @@ type RootLayoutProps = {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="ko">
+    <html lang="ko" className="overflow-x-hidden">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -92,7 +99,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
           <SiteFooter />
         </main>
         <AgentationDevtools />
-        <MobileViewToggler />
+
       </body>
     </html>
   );

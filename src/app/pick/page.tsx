@@ -414,7 +414,7 @@ export default function PickPage() {
         <section className="overflow-visible flex-1 flex items-center">
           {/* 드래그 캡처 영역 */}
           <div
-            className={`w-full overflow-x-clip overflow-y-visible select-none ${exitPhase !== "idle" ? "pointer-events-none" : isDragging ? "cursor-grabbing" : "cursor-grab"
+            className={`w-full overflow-hidden select-none ${exitPhase !== "idle" ? "pointer-events-none" : isDragging ? "cursor-grabbing" : "cursor-grab"
               }`}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}

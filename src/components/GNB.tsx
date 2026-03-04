@@ -44,14 +44,7 @@ export function GNB() {
           borderTop: "1px solid rgba(232, 201, 106, 0.12)",
         }}
       >
-        {/* 로고 */}
-        <Link
-          href="/"
-          className="flex items-center gap-2 text-[#ffd98e] font-semibold text-[15px] tracking-wide hover:opacity-80 transition-opacity"
-        >
-          <span className="text-base">✨</span>
-          <span>별빛 타로</span>
-        </Link>
+        {/* 데스크탑 링크 (모바일에서는 햄버거 메뉴 사용) */}
 
         {/* 데스크탑 링크 */}
         <div className="hidden md:flex items-center gap-1">
