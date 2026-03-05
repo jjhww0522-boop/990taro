@@ -112,7 +112,7 @@ export default function ResultPage() {
       } catch { /* 캐시 파싱 실패 시 무시하고 재호출 */ }
     }
 
-    fetch("/api/chat", {
+    fetch("/tarot/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(dId ? { "x-device-id": dId } : {}), ...(cleanEntitlement ? { Authorization: `Bearer ${cleanEntitlement}` } : {}) },
       body: JSON.stringify({ question, category, cards: payloadCardsRef.current }),
@@ -143,7 +143,7 @@ export default function ResultPage() {
     setChatPhase("chatting");
     setIsChatLoading(true);
     try {
-      const res = await fetch("/api/chat/consult", {
+      const res = await fetch("/tarot/api/chat/consult", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(deviceIdRef.current ? { "x-device-id": deviceIdRef.current } : {}), ...(entitlementRef.current ? { Authorization: `Bearer ${entitlementRef.current}` } : {}) },
         body: JSON.stringify({ cards: payloadCardsRef.current, initialReading: result, originalQuestion: originalQuestionRef.current, history: [] }),
@@ -205,7 +205,7 @@ export default function ResultPage() {
     setIsChatLoading(true);
     try {
       const selectedMinorCard = { name: card.name, original: card.original, isReversed, keyword };
-      const res = await fetch("/api/chat/consult", {
+      const res = await fetch("/tarot/api/chat/consult", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(deviceIdRef.current ? { "x-device-id": deviceIdRef.current } : {}), ...(entitlementRef.current ? { Authorization: `Bearer ${entitlementRef.current}` } : {}) },
         body: JSON.stringify({ cards: payloadCardsRef.current, initialReading: result, originalQuestion: originalQuestionRef.current, history: chatMessages, message: pendingMessage ?? "", selectedMinorCard }),
@@ -231,7 +231,7 @@ export default function ResultPage() {
     setIsChatLoading(true);
     try {
       const fullMsg = userMsg;
-      const res = await fetch("/api/chat/consult", {
+      const res = await fetch("/tarot/api/chat/consult", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(deviceIdRef.current ? { "x-device-id": deviceIdRef.current } : {}), ...(entitlementRef.current ? { Authorization: `Bearer ${entitlementRef.current}` } : {}) },
         body: JSON.stringify({ cards: payloadCardsRef.current, initialReading: result, originalQuestion: originalQuestionRef.current, history: chatMessages, message: fullMsg }),

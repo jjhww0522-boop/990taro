@@ -53,7 +53,10 @@ async function validatePremiumSession(request: NextRequest) {
   const auth = request.headers.get("authorization");
   if (!auth?.toLowerCase().startsWith("bearer ")) return false;
 
-  const verify = await fetch(new URL("/api/auth/session", request.url), {
+  // basePath('/tarot')를 포함한 세션 검증 URL 구성
+  const sessionUrl = new URL(request.url);
+  sessionUrl.pathname = "/tarot/api/auth/session";
+  const verify = await fetch(sessionUrl.toString(), {
     method: "GET",
     headers: { Authorization: auth },
     cache: "no-store",
@@ -62,7 +65,9 @@ async function validatePremiumSession(request: NextRequest) {
 }
 
 export async function middleware(request: NextRequest) {
-  if (request.nextUrl.pathname !== "/api/chat") {
+  // matcher가 /api/chat 으로 제한되어 있어 이 check는 안전장치용
+  const pathname = request.nextUrl.pathname;
+  if (!pathname.endsWith("/api/chat")) {
     return NextResponse.next();
   }
 

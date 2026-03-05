@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+    // ─── basePath: tetolab.com/tarot 경로로 서비스 ─────────────────────────────
+    basePath: "/tarot",
+
     // ─── 보안 헤더 ─────────────────────────────────────────────────────────────
     async headers() {
         const isDev = process.env.NODE_ENV === "development";
