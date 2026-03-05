@@ -78,13 +78,15 @@ export default function RootLayout({ children }: RootLayoutProps) {
             `}</Script>
           </>
         )}
-        {/* Google AdSense */}
-        <Script
-          async
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_ID}`}
-          strategy="lazyOnload"
-          crossOrigin="anonymous"
-        />
+        {/* Google AdSense: 승인 후 NEXT_PUBLIC_ADSENSE_ID 환경변수 설정 시 활성화 */}
+        {process.env.NEXT_PUBLIC_ADSENSE_ID && (
+          <Script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_ID}`}
+            strategy="lazyOnload"
+            crossOrigin="anonymous"
+          />
+        )}
       </head>
       <body className="font-sans bg-[#0f1419] text-[#fef9f0] overflow-x-hidden">
         <div className="bg-layer" />
