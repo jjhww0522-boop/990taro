@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import Image from "next/image";
 import { motion, type Variants } from "framer-motion";
 import { useRouter } from "next/navigation";
 
@@ -83,15 +84,21 @@ export default function ShufflePage() {
           className="relative h-[340px] w-[340px] md:h-[420px] md:w-[420px]"
         >
           {Array.from({ length: CARD_COUNT }).map((_, i) => (
-            <motion.img
+            <motion.div
               key={i}
               custom={i}
               variants={cardVariants}
-              src="/cards/back_00.jpg"
-              alt={`card-${i + 1}`}
-              className="absolute left-1/2 top-1/2 h-[180px] w-[110px] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[#8C2727]/45 object-cover shadow-[0_0_16px_rgba(0,0,0,0.45)] brightness-[0.8] md:h-[210px] md:w-[128px]"
+              className="absolute left-1/2 top-1/2 h-[180px] w-[110px] -translate-x-1/2 -translate-y-1/2 rounded-xl overflow-hidden border border-[#8C2727]/45 shadow-[0_0_16px_rgba(0,0,0,0.45)] brightness-[0.8] md:h-[210px] md:w-[128px]"
               style={{ zIndex: CARD_COUNT - i }}
-            />
+            >
+              <Image
+                src="/cards/back_00.jpg"
+                alt={`card-${i + 1}`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 110px, 128px"
+              />
+            </motion.div>
           ))}
         </motion.div>
       </div>

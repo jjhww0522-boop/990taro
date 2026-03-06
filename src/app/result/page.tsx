@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef, type CSSProperties } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import AdBanner from "../../components/AdBanner";
@@ -340,7 +341,7 @@ export default function ResultPage() {
                     </motion.div>
                     <div className={`relative mx-auto rounded-xl transition-all duration-700 ${isCurrent ? "shadow-[0_0_60px_rgba(232,201,106,0.4)]" : "grayscale-[0.3]"}`} style={{ height: "358px", width: "238px" }}>
                       {isCurrent && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.7 }} className="absolute inset-0 -z-10 blur-[40px] mix-blend-screen rounded-full pointer-events-none" style={{ backgroundImage: `url(${card.image})`, backgroundSize: "cover", transform: "scale(1.25) translateY(5%)" }} />}
-                      <img src={card.image} alt={card.name} className="h-full w-full object-cover rounded-xl relative z-10 border border-white/10" style={{ transform: card.isReversed ? "rotate(180deg)" : "none" }} />
+                      <Image src={card.image} alt={card.name} fill className="object-cover rounded-xl z-10 border border-white/10" style={{ transform: card.isReversed ? "rotate(180deg)" : "none" }} sizes="238px" />
                       {/* 역방향 뱃지는 이미지 div 내부에 두지 않음 - 카드 이름과 겹침 방지 */}
                     </div>
                     {/* 역방향 뱃지 - 카드 이미지와 카드 이름 사이에 배치 */}
@@ -447,7 +448,7 @@ export default function ResultPage() {
                     onClick={() => setShowCardModal(showCardModal === i ? null : i)}
                     style={{ position: "relative", width: 38, height: 55, borderRadius: 8, overflow: "hidden", border: showCardModal === i ? "2px solid rgba(232,201,106,0.9)" : "1px solid rgba(232,201,106,0.3)", background: "#0f1419", flexShrink: 0, cursor: "pointer", padding: 0 }}
                   >
-                    <img src={card.image} alt={card.name} style={{ width: "100%", height: "100%", objectFit: "cover", transform: card.isReversed ? "rotate(180deg)" : "none" }} />
+                    <Image src={card.image} alt={card.name} fill style={{ objectFit: "cover", transform: card.isReversed ? "rotate(180deg)" : "none" }} sizes="38px" />
                     <div style={{ position: "absolute", top: 0, inset: "0 0 auto", background: "linear-gradient(rgba(0,0,0,0.8),transparent)", padding: "2px 4px", textAlign: "center" }}>
                       <span style={{ fontSize: 8, color: "#ffd98e" }}>{LABELS[i]}</span>
                     </div>
@@ -466,7 +467,7 @@ export default function ResultPage() {
             {showCardModal !== null && result && cards[showCardModal] && (
               <div style={{ flexShrink: 0, background: "rgba(10,14,28,0.98)", borderBottom: "1px solid rgba(232,201,106,0.2)", padding: "0.875rem 1.5rem" }} onClick={e => e.stopPropagation()}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                  <img src={cards[showCardModal].image} alt={cards[showCardModal].name} style={{ width: 34, height: 50, objectFit: "cover", borderRadius: 6, border: "1px solid rgba(232,201,106,0.5)", transform: cards[showCardModal].isReversed ? "rotate(180deg)" : "none", flexShrink: 0 }} />
+                  <Image src={cards[showCardModal].image} alt={cards[showCardModal].name} width={34} height={50} style={{ objectFit: "cover", borderRadius: 6, border: "1px solid rgba(232,201,106,0.5)", transform: cards[showCardModal].isReversed ? "rotate(180deg)" : "none", flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
                     <p style={{ fontSize: 10, color: "rgba(255,249,240,0.4)", letterSpacing: "0.1em", margin: "0 0 2px" }}>{LABELS[showCardModal]}</p>
                     <p style={{ fontSize: 15, color: "#ffd98e", fontWeight: 600, margin: 0 }}>
