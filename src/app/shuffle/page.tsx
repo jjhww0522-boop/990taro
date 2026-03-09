@@ -92,7 +92,7 @@ export default function ShufflePage() {
               style={{ zIndex: CARD_COUNT - i }}
             >
               <Image
-                src="/cards/back_00.jpg"
+                src="/tarot/cards/back_00.jpg"
                 alt={`card-${i + 1}`}
                 fill
                 className="object-cover"
