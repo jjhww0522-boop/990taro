@@ -3,7 +3,8 @@
     "allow": [
       "Bash(xargs grep -l \"metadata\")",
       "Bash(ls /c/Users/EKR/Desktop/990taro/public/cards/major_*.jpg)",
-      "Bash(npm run build)"
+      "Bash(npm run build)",
+      "Bash(git push --force origin main)"
     ]
   }
 }
