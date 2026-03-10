@@ -286,9 +286,9 @@ export default function PickPage() {
             style={{ background: "radial-gradient(ellipse at center, rgba(232,201,106,0.6) 0%, transparent 70%)", filter: "blur(10px)" }}
           />
         )}
-        {/* 3D 플립 — 뒷면만 포함 (앞면은 3D context 밖에 오버레이) */}
-        <motion.div className="relative h-full w-full" style={{ transformStyle: "preserve-3d" }} animate={{ rotateY: isSelected ? 180 : 0 }} transition={{ duration: 2.2, ease: [0.22, 1, 0.36, 1] }}>
-          <div className="absolute inset-0 rounded-lg" style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.3))", overflow: "visible" }}>
+        {/* 플립 컨테이너 — preserve-3d/backfaceVisibility 없이 rotateY만 사용 */}
+        <motion.div className="relative h-full w-full" animate={{ rotateY: isSelected ? 180 : 0 }} transition={{ duration: 2.2, ease: [0.22, 1, 0.36, 1] }}>
+          <div className="absolute inset-0 rounded-lg" style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.3))", overflow: "visible" }}>
             <Image src="/tarot/cards/back_00.jpg" alt="타로 카드 뒷면" fill draggable={false} className="object-cover bg-[#1A0A00] rounded-lg moonlight-glow" sizes="172px" />
           </div>
         </motion.div>
@@ -369,9 +369,9 @@ export default function PickPage() {
         {isSelected && exitPhase === "scatter" && (
           <motion.div className="absolute inset-0 rounded-lg pointer-events-none" initial={{ opacity: 0 }} animate={{ opacity: [0, 0.75, 0] }} transition={{ duration: 0.9, delay: 0.2 }} style={{ background: "radial-gradient(ellipse at center, rgba(232,201,106,0.6) 0%, transparent 70%)", filter: "blur(10px)" }} />
         )}
-        {/* 3D 플립 — 뒷면만 포함 */}
-        <motion.div className="relative h-full w-full" style={{ transformStyle: "preserve-3d" }} animate={{ rotateY: isSelected ? 180 : 0 }} transition={{ duration: 2.2, ease: [0.22, 1, 0.36, 1] }}>
-          <div className="absolute inset-0 rounded-lg" style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", overflow: "visible" }}>
+        {/* 플립 컨테이너 — preserve-3d/backfaceVisibility 없이 rotateY만 사용 */}
+        <motion.div className="relative h-full w-full" animate={{ rotateY: isSelected ? 180 : 0 }} transition={{ duration: 2.2, ease: [0.22, 1, 0.36, 1] }}>
+          <div className="absolute inset-0 rounded-lg" style={{ filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", overflow: "visible" }}>
             <Image src="/tarot/cards/back_00.jpg" alt="타로 카드 뒷면" fill draggable={false} className="object-cover bg-[#1A0A00] rounded-lg moonlight-glow" sizes="128px" />
           </div>
         </motion.div>
