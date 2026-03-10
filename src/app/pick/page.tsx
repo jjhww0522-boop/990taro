@@ -285,13 +285,13 @@ export default function PickPage() {
             style={{ background: "radial-gradient(ellipse at center, rgba(232,201,106,0.6) 0%, transparent 70%)", filter: "blur(10px)" }}
           />
         )}
-        {/* 플립 컨테이너 */}
-        <motion.div className="relative h-full w-full" animate={{ rotateY: isSelected ? 180 : 0 }} transition={{ duration: 2.2, ease: [0.22, 1, 0.36, 1] }}>
+        {/* 플립 컨테이너 — z-index 1 */}
+        <motion.div className="relative h-full w-full" style={{ zIndex: 1 }} animate={{ rotateY: isSelected ? 180 : 0 }} transition={{ duration: 2.2, ease: [0.22, 1, 0.36, 1] }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/tarot/cards/back_00.jpg" alt="타로 카드 뒷면" draggable={false} className="absolute inset-0 w-full h-full object-cover rounded-lg moonlight-glow bg-[#1A0A00]" style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }} />
         </motion.div>
-        {/* 앞면 오버레이 — 선택 시 페이드인 */}
-        <motion.div className="absolute inset-0 rounded-lg overflow-hidden" style={{ filter: isSelected ? "drop-shadow(0 0 20px rgba(212,175,55,0.6))" : "drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }} initial={{ opacity: 0 }} animate={{ opacity: isSelected ? 1 : 0 }} transition={{ duration: 0.2, delay: isSelected ? 0.9 : 0.6 }}>
+        {/* 앞면 오버레이 — z-index 2, 선택 시 페이드인 */}
+        <motion.div className="absolute inset-0 rounded-lg overflow-hidden" style={{ zIndex: 2, filter: isSelected ? "drop-shadow(0 0 20px rgba(212,175,55,0.6))" : "drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }} initial={{ opacity: 0 }} animate={{ opacity: isSelected ? 1 : 0 }} transition={{ duration: 0.2, delay: isSelected ? 0.9 : 0.6 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <motion.img src={`/tarot/cards/major_${String(cardIndex).padStart(2, "0")}.jpg`} alt={cardData.name} draggable={false} className="absolute inset-0 w-full h-full object-cover rounded-lg bg-[#0A0503]" animate={{ rotate: isReversed ? 180 : 0 }} transition={{ duration: 1.5 }} />
           {isReversed && (<motion.div className="absolute inset-0 bg-gradient-to-t from-[#8B1A1A]/50 to-transparent rounded-lg" animate={{ opacity: [0.18, 0.45, 0.18] }} transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }} />)}
@@ -367,13 +367,13 @@ export default function PickPage() {
         {isSelected && exitPhase === "scatter" && (
           <motion.div className="absolute inset-0 rounded-lg pointer-events-none" initial={{ opacity: 0 }} animate={{ opacity: [0, 0.75, 0] }} transition={{ duration: 0.9, delay: 0.2 }} style={{ background: "radial-gradient(ellipse at center, rgba(232,201,106,0.6) 0%, transparent 70%)", filter: "blur(10px)" }} />
         )}
-        {/* 플립 컨테이너 */}
-        <motion.div className="relative h-full w-full" animate={{ rotateY: isSelected ? 180 : 0 }} transition={{ duration: 2.2, ease: [0.22, 1, 0.36, 1] }}>
+        {/* 플립 컨테이너 — z-index 1 */}
+        <motion.div className="relative h-full w-full" style={{ zIndex: 1 }} animate={{ rotateY: isSelected ? 180 : 0 }} transition={{ duration: 2.2, ease: [0.22, 1, 0.36, 1] }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/tarot/cards/back_00.jpg" alt="타로 카드 뒷면" draggable={false} className="absolute inset-0 w-full h-full object-cover rounded-lg moonlight-glow bg-[#1A0A00]" style={{ filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
         </motion.div>
-        {/* 앞면 오버레이 — 선택 시 페이드인 */}
-        <motion.div className="absolute inset-0 rounded-lg overflow-hidden" style={{ filter: isSelected ? "drop-shadow(0 0 16px rgba(212,175,55,0.6))" : "drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} initial={{ opacity: 0 }} animate={{ opacity: isSelected ? 1 : 0 }} transition={{ duration: 0.2, delay: isSelected ? 0.9 : 0.6 }}>
+        {/* 앞면 오버레이 — z-index 2, 선택 시 페이드인 */}
+        <motion.div className="absolute inset-0 rounded-lg overflow-hidden" style={{ zIndex: 2, filter: isSelected ? "drop-shadow(0 0 16px rgba(212,175,55,0.6))" : "drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} initial={{ opacity: 0 }} animate={{ opacity: isSelected ? 1 : 0 }} transition={{ duration: 0.2, delay: isSelected ? 0.9 : 0.6 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <motion.img src={`/tarot/cards/major_${String(cardIndex).padStart(2, "0")}.jpg`} alt={cardData.name} draggable={false} className="absolute inset-0 w-full h-full object-cover rounded-lg bg-[#0A0503]" animate={{ rotate: isReversed ? 180 : 0 }} transition={{ duration: 1.5 }} />
           {isReversed && (<motion.div className="absolute inset-0 bg-gradient-to-t from-[#8B1A1A]/50 to-transparent rounded-lg" animate={{ opacity: [0.18, 0.45, 0.18] }} transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }} />)}
