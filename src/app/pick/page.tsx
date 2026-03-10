@@ -290,10 +290,9 @@ export default function PickPage() {
           <div className="absolute inset-0 rounded-lg" style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", filter: isSelected ? "drop-shadow(0 0 20px rgba(212,175,55,0.6))" : "drop-shadow(0 4px 12px rgba(0,0,0,0.3))", overflow: "visible" }}>
             <Image src="/tarot/cards/back_00.jpg" alt="타로 카드 뒷면" fill draggable={false} className="object-cover bg-[#1A0A00] rounded-lg moonlight-glow" sizes="172px" />
           </div>
-          <div className="absolute inset-0 rounded-lg" style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", filter: isSelected ? "drop-shadow(0 0 20px rgba(212,175,55,0.6))" : "drop-shadow(0 4px 12px rgba(0,0,0,0.3))", overflow: "visible" }}>
-            <motion.div className="absolute inset-0" animate={{ rotate: isReversed ? 180 : 0 }} transition={{ duration: 1.5 }}>
-              <Image src={`/tarot/cards/major_${String(cardIndex).padStart(2, "0")}.jpg`} alt={cardData.name} fill draggable={false} className="object-cover bg-[#0A0503] rounded-lg" sizes="172px" />
-            </motion.div>
+          <div className="absolute inset-0 rounded-lg overflow-hidden" style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", filter: isSelected ? "drop-shadow(0 0 20px rgba(212,175,55,0.6))" : "drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <motion.img src={`/tarot/cards/major_${String(cardIndex).padStart(2, "0")}.jpg`} alt={cardData.name} draggable={false} className="absolute inset-0 w-full h-full object-cover rounded-lg bg-[#0A0503]" animate={{ rotate: isReversed ? 180 : 0 }} transition={{ duration: 1.5 }} />
             {isReversed && (<motion.div className="absolute inset-0 bg-gradient-to-t from-[#8B1A1A]/50 to-transparent rounded-lg" animate={{ opacity: [0.18, 0.45, 0.18] }} transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }} />)}
             {isSelected && (
               <div className="absolute inset-x-0 bottom-0 top-1/2 pointer-events-none overflow-hidden rounded-b-lg">
@@ -372,10 +371,9 @@ export default function PickPage() {
           <div className="absolute inset-0 rounded-lg" style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", filter: isSelected ? "drop-shadow(0 0 16px rgba(212,175,55,0.6))" : "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", overflow: "visible" }}>
             <Image src="/tarot/cards/back_00.jpg" alt="타로 카드 뒷면" fill draggable={false} className="object-cover bg-[#1A0A00] rounded-lg moonlight-glow" sizes="128px" />
           </div>
-          <div className="absolute inset-0 rounded-lg" style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", filter: isSelected ? "drop-shadow(0 0 16px rgba(212,175,55,0.6))" : "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", overflow: "visible" }}>
-            <motion.div className="absolute inset-0" animate={{ rotate: isReversed ? 180 : 0 }} transition={{ duration: 1.5 }}>
-              <Image src={`/tarot/cards/major_${String(cardIndex).padStart(2, "0")}.jpg`} alt={cardData.name} fill draggable={false} className="object-cover bg-[#0A0503] rounded-lg" sizes="128px" />
-            </motion.div>
+          <div className="absolute inset-0 rounded-lg overflow-hidden" style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", filter: isSelected ? "drop-shadow(0 0 16px rgba(212,175,55,0.6))" : "drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <motion.img src={`/tarot/cards/major_${String(cardIndex).padStart(2, "0")}.jpg`} alt={cardData.name} draggable={false} className="absolute inset-0 w-full h-full object-cover rounded-lg bg-[#0A0503]" animate={{ rotate: isReversed ? 180 : 0 }} transition={{ duration: 1.5 }} />
             {isReversed && (<motion.div className="absolute inset-0 bg-gradient-to-t from-[#8B1A1A]/50 to-transparent rounded-lg" animate={{ opacity: [0.18, 0.45, 0.18] }} transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }} />)}
           </div>
         </motion.div>
