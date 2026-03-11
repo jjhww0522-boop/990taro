@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
 
-// 🌐 도메인 변경 시 여기만 수정 (현재: 990taro.vercel.app)
-// 추후 커스텀 도메인 구매 시 아래 값을 새 도메인으로 교체할 것
-const BASE_URL = "https://990taro.vercel.app";
+// 🌐 tetolab.com/tarot 경로로 서비스 중
+const BASE_URL = "https://tetolab.com/tarot";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

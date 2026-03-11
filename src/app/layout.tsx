@@ -14,9 +14,9 @@ export const metadata: Metadata = {
   },
   description: "별빛 타로에서 당신의 이야기를 들려주세요. AI 별빛 상담사가 22장 동양 타로 카드로 연애운·금전운·학업운을 따뜻하게 풀어드립니다. 하루 1회 무료, 회원가입 불필요.",
   keywords: ["별빛 타로", "AI 타로", "타로 상담", "오늘의 운세", "타로 점", "연애운", "금전운", "학업운", "건강운", "무료 타로", "타로 카드", "AI 점술", "타로 해석"],
-  metadataBase: new URL("https://990taro.vercel.app"),
+  metadataBase: new URL("https://tetolab.com/tarot"),
   alternates: {
-    canonical: "https://990taro.vercel.app",
+    canonical: "https://tetolab.com/tarot",
   },
   robots: {
     index: true,
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "별빛 타로 | AI 타로 상담",
     description: "AI 별빛 상담사와 함께하는 타로 리딩. 연애·금전·건강·학업 무료 상담. 회원가입 없이 바로 시작.",
-    url: "https://990taro.vercel.app",
+    url: "https://tetolab.com/tarot",
     siteName: "별빛 타로",
     locale: "ko_KR",
     type: "website",
@@ -59,6 +59,31 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="ko" className="overflow-x-hidden">
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "별빛 타로",
+            "url": "https://tetolab.com/tarot",
+            "description": "AI 별빛 상담사가 22장 동양 타로 카드로 연애운·금전운·학업운을 따뜻하게 풀어드립니다.",
+            "applicationCategory": "EntertainmentApplication",
+            "operatingSystem": "Web",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "KRW",
+              "description": "하루 1회 무료 타로 리딩"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "별빛타로",
+              "url": "https://tetolab.com/tarot",
+              "contactPoint": { "@type": "ContactPoint", "email": "support@990taro.com", "contactType": "customer support" }
+            },
+            "inLanguage": "ko"
+          }) }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Nosifer&family=East+Sea+Dokdo&display=swap" rel="stylesheet" />

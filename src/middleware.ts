@@ -7,6 +7,8 @@ const RATE_LIMIT_WINDOW = 60_000; // 1분 (ms)
 // 허용된 Origin 목록 (CSRF 방어)
 const ALLOWED_ORIGINS = [
     "https://990taro.vercel.app",
+    "https://tetolab.com",
+    "https://www.tetolab.com",
     "http://localhost:3000",
     "http://localhost:3001",
 ];

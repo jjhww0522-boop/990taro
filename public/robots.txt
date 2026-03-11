@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://990taro.vercel.app/sitemap.xml
+Sitemap: https://tetolab.com/tarot/sitemap.xml
