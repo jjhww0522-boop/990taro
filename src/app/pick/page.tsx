@@ -285,18 +285,35 @@ export default function PickPage() {
             style={{ background: "radial-gradient(ellipse at center, rgba(232,201,106,0.6) 0%, transparent 70%)", filter: "blur(10px)" }}
           />
         )}
-        {/* 카드 이미지: 뒷면/앞면 교체 */}
+        {/* 뒷면 — 선택 시 접히는 플립 애니메이션 */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={isSelected ? `/tarot/cards/major_${String(cardIndex).padStart(2, "0")}.jpg` : "/tarot/cards/back_00.jpg"}
-          alt={isSelected ? cardData.name : "타로 카드 뒷면"}
+        <motion.img
+          src="/tarot/cards/back_00.jpg"
+          alt="타로 카드 뒷면"
           draggable={false}
           width={172}
           height={256}
-          className={`absolute inset-0 w-full h-full object-cover rounded-lg ${isSelected ? "" : "moonlight-glow"}`}
-          style={{
-            filter: isSelected ? "drop-shadow(0 0 20px rgba(212,175,55,0.6))" : "drop-shadow(0 4px 12px rgba(0,0,0,0.3))",
-            transform: isSelected && isReversed ? "rotate(180deg)" : "none",
+          className="absolute inset-0 w-full h-full object-cover rounded-lg moonlight-glow"
+          style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }}
+          initial={false}
+          animate={{ scaleX: isSelected ? 0 : 1 }}
+          transition={{ duration: 0.3, delay: isSelected ? 0 : 0.3, ease: "easeIn" }}
+        />
+        {/* 앞면 — 선택 시 펼쳐지는 플립 + 역방향 회전 */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <motion.img
+          src={`/tarot/cards/major_${String(cardIndex).padStart(2, "0")}.jpg`}
+          alt={cardData.name}
+          draggable={false}
+          width={172}
+          height={256}
+          className="absolute inset-0 w-full h-full object-cover rounded-lg"
+          style={{ filter: "drop-shadow(0 0 20px rgba(212,175,55,0.6))" }}
+          initial={false}
+          animate={{ scaleX: isSelected ? 1 : 0, rotate: isSelected && isReversed ? 180 : 0 }}
+          transition={{
+            scaleX: { duration: 0.3, delay: isSelected ? 0.3 : 0, ease: "easeOut" },
+            rotate: { duration: 0.8, delay: 0.7, ease: [0.22, 1, 0.36, 1] },
           }}
         />
         {isSelected && (
@@ -363,18 +380,35 @@ export default function PickPage() {
         {isSelected && exitPhase === "scatter" && (
           <motion.div className="absolute inset-0 rounded-lg pointer-events-none" initial={{ opacity: 0 }} animate={{ opacity: [0, 0.75, 0] }} transition={{ duration: 0.9, delay: 0.2 }} style={{ background: "radial-gradient(ellipse at center, rgba(232,201,106,0.6) 0%, transparent 70%)", filter: "blur(10px)" }} />
         )}
-        {/* 카드 이미지: 뒷면/앞면 교체 */}
+        {/* 뒷면 — 선택 시 접히는 플립 애니메이션 */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={isSelected ? `/tarot/cards/major_${String(cardIndex).padStart(2, "0")}.jpg` : "/tarot/cards/back_00.jpg"}
-          alt={isSelected ? cardData.name : "타로 카드 뒷면"}
+        <motion.img
+          src="/tarot/cards/back_00.jpg"
+          alt="타로 카드 뒷면"
           draggable={false}
           width={128}
           height={190}
-          className={`absolute inset-0 w-full h-full object-cover rounded-lg ${isSelected ? "" : "moonlight-glow"}`}
-          style={{
-            filter: isSelected ? "drop-shadow(0 0 16px rgba(212,175,55,0.6))" : "drop-shadow(0 4px 8px rgba(0,0,0,0.3))",
-            transform: isSelected && isReversed ? "rotate(180deg)" : "none",
+          className="absolute inset-0 w-full h-full object-cover rounded-lg moonlight-glow"
+          style={{ filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }}
+          initial={false}
+          animate={{ scaleX: isSelected ? 0 : 1 }}
+          transition={{ duration: 0.3, delay: isSelected ? 0 : 0.3, ease: "easeIn" }}
+        />
+        {/* 앞면 — 선택 시 펼쳐지는 플립 + 역방향 회전 */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <motion.img
+          src={`/tarot/cards/major_${String(cardIndex).padStart(2, "0")}.jpg`}
+          alt={cardData.name}
+          draggable={false}
+          width={128}
+          height={190}
+          className="absolute inset-0 w-full h-full object-cover rounded-lg"
+          style={{ filter: "drop-shadow(0 0 16px rgba(212,175,55,0.6))" }}
+          initial={false}
+          animate={{ scaleX: isSelected ? 1 : 0, rotate: isSelected && isReversed ? 180 : 0 }}
+          transition={{
+            scaleX: { duration: 0.3, delay: isSelected ? 0.3 : 0, ease: "easeOut" },
+            rotate: { duration: 0.8, delay: 0.7, ease: [0.22, 1, 0.36, 1] },
           }}
         />
         {isSelected && (
