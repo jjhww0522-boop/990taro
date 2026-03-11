@@ -285,24 +285,20 @@ export default function PickPage() {
             style={{ background: "radial-gradient(ellipse at center, rgba(232,201,106,0.6) 0%, transparent 70%)", filter: "blur(10px)" }}
           />
         )}
-        {/* 뒷면 — 선택 시 숨김 */}
-        {!isSelected && (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src="/tarot/cards/back_00.jpg" alt="타로 카드 뒷면" draggable={false} className="absolute inset-0 w-full h-full object-cover rounded-lg moonlight-glow bg-[#1A0A00]" style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }} />
-        )}
-        {/* 앞면 — 선택 시 즉시 표시 */}
-        {isSelected && (
-          <div className="absolute inset-0 rounded-lg overflow-hidden" style={{ filter: "drop-shadow(0 0 20px rgba(212,175,55,0.6))" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/tarot/cards/major_${String(cardIndex).padStart(2, "0")}.jpg`} alt={cardData.name} draggable={false} className="absolute inset-0 w-full h-full object-cover rounded-lg bg-[#0A0503]" style={{ transform: isReversed ? "rotate(180deg)" : "none" }} />
-            {isReversed && (<div className="absolute inset-0 bg-gradient-to-t from-[#8B1A1A]/50 to-transparent rounded-lg" style={{ opacity: 0.3 }} />)}
-            <div className="absolute inset-x-0 bottom-0 top-1/2 pointer-events-none overflow-hidden rounded-b-lg">
-              {Array.from({ length: 15 }).map((_, pIdx) => (
-                <motion.div key={`dust-${pIdx}`} className="absolute bottom-4 w-1 h-1 rounded-full bg-[#D4AF37]" initial={{ opacity: 0, x: "50%", y: 0, scale: 0 }} animate={{ opacity: [0, 0.9, 0], x: `${50 + (Math.random() * 100 - 50)}%`, y: -(Math.random() * 80 + 30), scale: Math.random() * 1.5 + 0.5 }} transition={{ duration: 1.2 + Math.random() * 0.8, delay: 0.3 + Math.random() * 0.4, ease: "easeOut" }} style={{ left: `${Math.random() * 80 + 10}%`, boxShadow: "0 0 8px #D4AF37" }} />
-              ))}
-            </div>
-          </div>
-        )}
+        {/* 카드 이미지: 뒷면/앞면 교체 */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={isSelected ? `/tarot/cards/major_${String(cardIndex).padStart(2, "0")}.jpg` : "/tarot/cards/back_00.jpg"}
+          alt={isSelected ? cardData.name : "타로 카드 뒷면"}
+          draggable={false}
+          width={172}
+          height={256}
+          className={`absolute inset-0 w-full h-full object-cover rounded-lg ${isSelected ? "" : "moonlight-glow"}`}
+          style={{
+            filter: isSelected ? "drop-shadow(0 0 20px rgba(212,175,55,0.6))" : "drop-shadow(0 4px 12px rgba(0,0,0,0.3))",
+            transform: isSelected && isReversed ? "rotate(180deg)" : "none",
+          }}
+        />
         {isSelected && (
           <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: exitPhase === "scatter" ? 0 : 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }} className="pointer-events-none absolute left-1/2 -translate-x-1/2 z-50 flex flex-col items-center justify-center w-full whitespace-nowrap" style={{ bottom: "-65px" }}>
             <span className="mb-1 text-[10px] font-medium tracking-[0.1em] text-[#e8c96a] uppercase font-serif drop-shadow-md">{cardData.id === 0 ? "0" : cardData.id}. {cardData.original}</span>
@@ -367,19 +363,20 @@ export default function PickPage() {
         {isSelected && exitPhase === "scatter" && (
           <motion.div className="absolute inset-0 rounded-lg pointer-events-none" initial={{ opacity: 0 }} animate={{ opacity: [0, 0.75, 0] }} transition={{ duration: 0.9, delay: 0.2 }} style={{ background: "radial-gradient(ellipse at center, rgba(232,201,106,0.6) 0%, transparent 70%)", filter: "blur(10px)" }} />
         )}
-        {/* 뒷면 — 선택 시 숨김 */}
-        {!isSelected && (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src="/tarot/cards/back_00.jpg" alt="타로 카드 뒷면" draggable={false} className="absolute inset-0 w-full h-full object-cover rounded-lg moonlight-glow bg-[#1A0A00]" style={{ filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-        )}
-        {/* 앞면 — 선택 시 즉시 표시 */}
-        {isSelected && (
-          <div className="absolute inset-0 rounded-lg overflow-hidden" style={{ filter: "drop-shadow(0 0 16px rgba(212,175,55,0.6))" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/tarot/cards/major_${String(cardIndex).padStart(2, "0")}.jpg`} alt={cardData.name} draggable={false} className="absolute inset-0 w-full h-full object-cover rounded-lg bg-[#0A0503]" style={{ transform: isReversed ? "rotate(180deg)" : "none" }} />
-            {isReversed && (<div className="absolute inset-0 bg-gradient-to-t from-[#8B1A1A]/50 to-transparent rounded-lg" style={{ opacity: 0.3 }} />)}
-          </div>
-        )}
+        {/* 카드 이미지: 뒷면/앞면 교체 */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={isSelected ? `/tarot/cards/major_${String(cardIndex).padStart(2, "0")}.jpg` : "/tarot/cards/back_00.jpg"}
+          alt={isSelected ? cardData.name : "타로 카드 뒷면"}
+          draggable={false}
+          width={128}
+          height={190}
+          className={`absolute inset-0 w-full h-full object-cover rounded-lg ${isSelected ? "" : "moonlight-glow"}`}
+          style={{
+            filter: isSelected ? "drop-shadow(0 0 16px rgba(212,175,55,0.6))" : "drop-shadow(0 4px 8px rgba(0,0,0,0.3))",
+            transform: isSelected && isReversed ? "rotate(180deg)" : "none",
+          }}
+        />
         {isSelected && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: exitPhase === "scatter" ? 0 : 1 }} transition={{ duration: 0.4, delay: 0.1 }} className="pointer-events-none absolute left-1/2 -translate-x-1/2 z-50 flex flex-col items-center justify-center w-full whitespace-nowrap" style={{ bottom: "-52px" }}>
             <span className="text-[9px] font-medium tracking-[0.1em] text-[#e8c96a] uppercase font-serif">{cardData.id === 0 ? "0" : cardData.id}. {cardData.original}</span>
