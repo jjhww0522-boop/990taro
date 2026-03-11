@@ -279,6 +279,16 @@ export default function ResultPage() {
     setDragStart(0); setIsDragging(false);
   };
 
+  // ── 로딩 타이머 ──
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!isLoading) return;
+    const t = setInterval(() => setElapsed(s => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [isLoading]);
+
+  const loadingHint = elapsed < 5 ? "카드의 기운을 느끼는 중..." : elapsed < 12 ? "별빛이 해석을 준비하고 있어요" : elapsed < 20 ? "조금만 더 기다려 주세요" : "거의 다 됐어요, 잠시만요...";
+
   // ── 로딩 ──
   if (isLoading) {
     return (
@@ -291,6 +301,16 @@ export default function ResultPage() {
               </motion.span>
             ))}
           </div>
+          <motion.p
+            key={loadingHint}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 0.7, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mt-6 text-sm text-[#e8c96a]/80 tracking-wide"
+          >
+            {loadingHint}
+          </motion.p>
+          <p className="mt-3 text-xs text-[#fef9f0]/40 tabular-nums">{elapsed}초 경과</p>
         </div>
         <style jsx>{`
           @keyframes riseSmoke { 0%{transform:translate3d(0,0,0) scale(.82);opacity:0;} 20%{opacity:.28;} 100%{transform:translate3d(var(--drift),-180px,0) scale(1.3);opacity:0;} }
