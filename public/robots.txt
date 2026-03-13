@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /pick
+Disallow: /shuffle
+Disallow: /collection
+Disallow: /result
+Disallow: /payment
 
 Sitemap: https://tetolab.com/tarot/sitemap.xml
