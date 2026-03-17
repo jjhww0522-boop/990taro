@@ -5,15 +5,27 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
-const NAV_LINKS = [
+const NAV_KO = [
   { href: "/tarot-guide", label: "타로 도감" },
   { href: "/guide", label: "입문 가이드" },
   { href: "/about", label: "서비스 소개" },
 ];
 
+const NAV_EN = [
+  { href: "/en/tarot-guide", label: "Card Guide" },
+  { href: "/en/guide", label: "Beginner's Guide" },
+  { href: "/en/about", label: "About" },
+];
+
 export function GNB() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+
+  const isEnglish = pathname.startsWith("/en");
+  const NAV_LINKS = isEnglish ? NAV_EN : NAV_KO;
+  const homeHref = isEnglish ? "/en" : "/";
+  const startLabel = isEnglish ? "Start Reading" : "리딩 시작";
+  const startLabelMobile = isEnglish ? "Start Reading" : "리딩 시작하기";
 
   // 페이지 이동 시 메뉴 자동 닫기
   useEffect(() => {
@@ -31,7 +43,7 @@ export function GNB() {
   }, [isOpen]);
 
   // 리딩/결과 화면에서는 GNB 숨김 (몰입감 유지)
-  const hidden = ["/pick", "/result", "/shuffle"].some((p) => pathname.startsWith(p));
+  const hidden = ["/pick", "/result", "/shuffle", "/en/pick", "/en/result", "/en/shuffle"].some((p) => pathname.startsWith(p));
   if (hidden) return null;
 
   return (
@@ -66,19 +78,32 @@ export function GNB() {
           })}
         </div>
 
-        {/* 데스크탑: 리딩 시작 버튼 */}
-        <Link
-          href="/"
-          className="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-all duration-200 hover:opacity-90 active:scale-95"
-          style={{
-            background: "linear-gradient(135deg, rgba(232,201,106,0.9) 0%, rgba(200,160,70,0.9) 100%)",
-            color: "#0c1020",
-            boxShadow: "0 0 16px rgba(232,201,106,0.25)",
-          }}
-        >
-          <span className="text-xs">✦</span>
-          <span>리딩 시작</span>
-        </Link>
+        {/* 데스크탑: 언어 토글 + 리딩 시작 버튼 */}
+        <div className="flex items-center gap-2">
+          <Link
+            href={isEnglish ? "/" : "/en"}
+            className="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200"
+            style={{
+              border: "1px solid rgba(232,201,106,0.35)",
+              color: "#e8c96a",
+              background: "rgba(232,201,106,0.06)",
+            }}
+          >
+            {isEnglish ? "한국어" : "EN"}
+          </Link>
+          <Link
+            href={homeHref}
+            className="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-all duration-200 hover:opacity-90 active:scale-95"
+            style={{
+              background: "linear-gradient(135deg, rgba(232,201,106,0.9) 0%, rgba(200,160,70,0.9) 100%)",
+              color: "#0c1020",
+              boxShadow: "0 0 16px rgba(232,201,106,0.25)",
+            }}
+          >
+            <span className="text-xs">✦</span>
+            <span>{startLabel}</span>
+          </Link>
+        </div>
       </nav>
 
       {/* 모바일 GNB: 하단 고정 */}
@@ -170,10 +195,19 @@ export function GNB() {
                 })}
               </div>
 
+              {/* 언어 토글 */}
+              <Link
+                href={isEnglish ? "/" : "/en"}
+                className="mt-2 flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border transition-all"
+                style={{ border: "1px solid rgba(232,201,106,0.35)", color: "#e8c96a", background: "rgba(232,201,106,0.06)" }}
+              >
+                {isEnglish ? "🇰🇷 한국어로 보기" : "🇺🇸 View in English"}
+              </Link>
+
               {/* 리딩 시작 CTA */}
               <Link
-                href="/"
-                className="mt-4 flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[15px] font-semibold transition-all active:scale-[0.98]"
+                href={homeHref}
+                className="mt-2 flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[15px] font-semibold transition-all active:scale-[0.98]"
                 style={{
                   background: "linear-gradient(135deg, rgba(232,201,106,0.9) 0%, rgba(200,160,70,0.9) 100%)",
                   color: "#0c1020",
@@ -181,7 +215,7 @@ export function GNB() {
                 }}
               >
                 <span>✦</span>
-                <span>리딩 시작하기</span>
+                <span>{startLabelMobile}</span>
               </Link>
             </motion.div>
           </>
